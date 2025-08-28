@@ -1,0 +1,53 @@
+[
+    {
+        
+        "BuyID":"1dac299c-9b5a-4fb4-8ab5-fcdf6f9f0298",
+        "BillNum":"0000001",
+        "BuytTypeID":1,
+        "CarID":"1dac299c-9b5a-4fb4-8ab5-fcdf6f9f0298",
+        "Value":"100000",
+        "BuyPrice":"5.66",
+        "TotalPrice":"566000",
+        "CustID":"47ab518f-ec0e-4793-8d3b-53780452e400",
+        "FirstNum":"1",
+        "LastNum":"1000",
+        "BuyDate":"2024-12-05T00:00:00.000Z",
+        "UserID":"3b0fd66b-a4d6-4d95-94e4-01940c99aedb",
+        "Exist":true,
+        "OperDate":"2024-12-05T00:00:00.000Z"
+    },
+    {
+        
+        "BuyID":"1dac299c-9b5a-4fb4-8ab5-fcdf6f9f0211",
+        "BillNum":"0000002",
+        "BuytTypeID":2,
+        "CarID":"1dac299c-9b5a-4fb4-8ab5-fcdf6f9f0298",
+        "Value":"5000",
+        "BuyPrice":"6.10",
+        "TotalPrice":"30500",
+        "CustID":"aa076cf0-2af4-42d1-a65a-e21048900cdc",
+        "FirstNum":"0",
+        "LastNum":"0",
+        "BuyDate":"2024-12-05T00:00:00.000Z",
+        "UserID":"3b0fd66b-a4d6-4d95-94e4-01940c99aedb",
+        "Exist":true,
+        "OperDate":"2024-12-05T00:00:00.000Z"
+    },
+    {
+        
+        "BuyID":"1dac299c-9b5a-4fb4-8ab5-fcdf6f9f0222",
+        "BillNum":"0000003",
+        "BuytTypeID":2,
+        "CarID":"5a34add7-30f1-4878-a0cc-e45556f5bfe9",
+        "Value":"500",
+        "BuyPrice":"6.42",
+        "TotalPrice":"3210",
+        "CustID":"aa076cf0-2af4-42d1-a65a-e21048900cdc",
+        "FirstNum":"0",
+        "LastNum":"0",
+        "BuyDate":"2024-12-05T00:00:00.000Z",
+        "UserID":"3b0fd66b-a4d6-4d95-94e4-01940c99aedb",
+        "Exist":true,
+        "OperDate":"2024-12-05T00:00:00.000Z"
+    }
+]

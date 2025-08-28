@@ -1,0 +1,35 @@
+[
+    {
+        
+        "CarID":"1dac299c-9b5a-4fb4-8ab5-fcdf6f9f0298",
+        "Carrency":"دولار",
+        "CarrencyCode":"$",
+        "SalePrice":"6.24",
+        "BuyPrice":"6.18",
+        "Balance":"0.00",
+        "UserID":"3b0fd66b-a4d6-4d95-94e4-01940c99aedb",
+        "Exist":true
+    },
+    {
+        
+        "CarID":"5a34add7-30f1-4878-a0cc-e45556f5bfe9",
+        "Carrency":"يورو",
+        "CarrencyCode":"€",
+        "SalePrice":"6.48",
+        "BuyPrice":"6.42",
+        "Balance":"0.00",
+        "UserID":"0880eb85-2a08-4898-8aae-3cf90c48b08b",
+        "Exist":true
+    },
+    {
+        
+        "CarID":"a8fbd7bf-b3f0-4f75-8b5d-6f0a078bef37",
+        "Carrency":"جني استرليني",
+        "CarrencyCode":"£",
+        "SalePrice":"7.05",
+        "BuyPrice":"6.99",
+        "Balance":"0.00",
+        "UserID":"0880eb85-2a08-4898-8aae-3cf90c48b08b",
+        "Exist":true
+        }
+]

@@ -1,0 +1,24 @@
+[
+
+    {
+        "NatID":"760beed5-a14b-4e4b-9951-3ebe6f5842a1",
+        "Nationality":"ليبي",
+        "CatID":"0e980d1b-ae93-4a5a-b235-4dfea5f42860",
+        "UserID":"3b0fd66b-a4d6-4d95-94e4-01940c99aedb",
+        "Exist":true
+    },
+    {
+        "NatID":"6c653ab9-2b4b-49be-b891-944f5ff98b85",
+        "Nationality":"مصري",
+        "CatID":"076a4956-60c2-4b73-b275-530359a91cba",
+        "UserID":"d9d323fa-5c98-4222-a352-120e1f5e2798",
+        "Exist":true
+    },
+    {
+        "NatID":"0636f954-6ef8-40b4-819f-fbfe4511be56",
+        "Nationality":"امريكي",
+        "CatID":"27d49b13-1a3a-4fc7-924c-07147e4d08bd",
+        "UserID":"9e2895ae-4afe-4ff2-b3b3-be15cf1c82d6",
+        "Exist":true
+    }
+]

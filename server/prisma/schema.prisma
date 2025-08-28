@@ -1,0 +1,183 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  UserID            String              @id
+  UserName          String
+  Email             String
+  Customers         Customers[]
+  Nationalits       Nationalits[]
+  Carrences         Carrences[]
+  Buys              Buys[]
+  TreasuryMovements TreasuryMovements[]
+  Dinars            Dinars[]
+  Sales             Sales[]
+  ExpenseItems      ExpenseItems[]
+
+  ExpanseAccounts ExpanseAccounts[]
+}
+
+model Categories {
+  CatID       String        @id @default(cuid())
+  Categorie   String
+  CreatedAt   DateTime      @default(now())
+  UpdatedAt   DateTime      @updatedAt
+  Nationalits Nationalits[]
+}
+
+
+model Nationalits {
+  NatID       String      @id @default(cuid())
+  Nationality String
+  CatID       String
+  UserID      String
+  Exist       Boolean
+  CreatedAt   DateTime    @default(now())
+  UpdatedAt   DateTime    @updatedAt
+  Customers   Customers[]
+  Categorie   Categories  @relation(fields: [CatID], references: [CatID])
+  User        Users       @relation(fields: [UserID], references: [UserID])
+}
+
+model Customers {
+  CustID         String          @id
+  Customer       String
+  NatID          String
+  passportNumber String?
+  ExpDate        String?
+  ReleasePlace   String?
+  NationalNumber String?
+  Address        String?
+  Phone          String?
+  UserID         String
+  Exist          Boolean
+  OperDate       DateTime        @default(now())
+  Buys           Buys[]
+  Nationality    Nationalits     @relation(fields: [NatID], references: [NatID])
+  User           Users           @relation(fields: [UserID], references: [UserID])
+  Sales          Sales[]
+}
+
+model BuyTypes {
+  BuyTypeID Int    @id
+  BuyType   String
+  Buys      Buys[]
+}
+
+model Carrences {
+  CarID             String              @id @default(cuid())
+  Carrency          String
+  CarrencyCode      String
+  Balance           Decimal             @db.Decimal(18, 3)
+  UserID            String
+  Exist             Boolean
+  CreatedAt         DateTime            @default(now())
+  UpdatedAt         DateTime            @updatedAt
+  User              Users               @relation(fields: [UserID], references: [UserID])
+  Buys              Buys[]
+  TreasuryMovements TreasuryMovements[]
+  Sales             Sales[]
+}
+
+
+model Buys {
+  BuyID      String    @id
+  BillNum    String
+  BuyTypeID  Int       // إصلاح اسم الحقل
+  CarID      String
+  Value      Decimal   @db.Decimal(18, 3)
+  BuyPrice   Decimal   @db.Decimal(18, 3)
+  TotalPrice Decimal   @db.Decimal(18, 3)
+  CustID     String
+  FirstNum   String?
+  LastNum    String?
+  BuyDate    DateTime  @default(now())
+  UserID     String
+  Exist      Boolean
+  OperDate   DateTime  @default(now())
+  User       Users     @relation(fields: [UserID], references: [UserID])
+  BuyType    BuyTypes  @relation(fields: [BuyTypeID], references: [BuyTypeID])
+  Carrence   Carrences @relation(fields: [CarID], references: [CarID])
+  Customer   Customers @relation(fields: [CustID], references: [CustID])
+}
+
+model TreasuryMovements {
+  TreaMoveID   String    @id
+  CarID        String
+  OpenBalance  Decimal   @db.Decimal(18, 3)
+  Cridit       Decimal   @db.Decimal(18, 3)
+  Debit        Decimal   @db.Decimal(18, 3)
+  FinalBalance Decimal   @db.Decimal(18, 3)
+  Statment     String
+  UserID       String
+  Exist        Boolean
+  OperDate     DateTime  @default(now())
+  Carrence     Carrences @relation(fields: [CarID], references: [CarID])
+  User         Users     @relation(fields: [UserID], references: [UserID])
+}
+
+model Dinars {
+  DinarID      String   @id
+  BillNum      String
+  OpenBalance  Decimal  @db.Decimal(18, 3)
+  Cridit       Decimal  @db.Decimal(18, 3)
+  Debit        Decimal  @db.Decimal(18, 3)
+  FinalBalance Decimal  @db.Decimal(18, 3)
+  UserID       String
+  Exist        Boolean
+  OperDate     DateTime @default(now())
+  User         Users    @relation(fields: [UserID], references: [UserID])
+}
+
+model Sales {
+  SaleID     String    @id
+  BillNum    String
+  CustID     String
+  CarID      String
+  SalePrice  Decimal   @db.Decimal(18, 3)
+  From       String?
+  To         String?
+  Value      Decimal   @db.Decimal(18, 3)
+  TotalPrice Decimal   @db.Decimal(18, 3)
+  BillDate   DateTime  @default(now())
+  UserID     String
+  Exist      Boolean
+  OperDate   DateTime  @default(now())
+  Carrence   Carrences @relation(fields: [CarID], references: [CarID])
+  User       Users     @relation(fields: [UserID], references: [UserID])
+  Customer   Customers @relation(fields: [CustID], references: [CustID])
+}
+
+model ExpenseItems {
+  ExpItemID       String            @id
+  ExpItem         String
+  UserID          String
+  Exist           Boolean
+  OperDate        DateTime          @default(now())
+  User            Users             @relation(fields: [UserID], references: [UserID])
+  ExpanseAccounts ExpanseAccounts[]
+}
+
+model ExpanseAccounts {
+  ExpAccId    String       @id
+  ExpItemID   String
+  ExpValue    Decimal      @db.Decimal(18, 3)
+  Statment    String?
+  UserID      String
+  Exist       Boolean
+  OperDate    DateTime     @default(now())
+  User        Users        @relation(fields: [UserID], references: [UserID])
+  ExpenseItem ExpenseItems @relation(fields: [ExpItemID], references: [ExpItemID])
+}

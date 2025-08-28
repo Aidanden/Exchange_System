@@ -1,0 +1,35 @@
+[
+  {
+    "TreaMoveID": "1dac299c-9b5a-4fb4-8ab5-fcdf6f9f7811",
+    "CarID": "1dac299c-9b5a-4fb4-8ab5-fcdf6f9f0298",
+    "OpenBalance": "0.00",
+    "Cridit": "0.00",
+    "Debit": "0.00",
+    "FinalBalance": "0.00",
+    "UserID": "3b0fd66b-a4d6-4d95-94e4-01940c99aedb",
+    "Exist": true,
+    "OperDate": "2024-12-05T00:00:00.000Z"
+  },
+  {
+    "TreaMoveID": "1dac299c-9b5a-4fb4-8ab5-fcdf6f9f7822",
+    "CarID": "5a34add7-30f1-4878-a0cc-e45556f5bfe9",
+    "OpenBalance": "0.00",
+    "Cridit": "0.00",
+    "Debit": "0.00",
+    "FinalBalance": "0.00",
+    "UserID": "3b0fd66b-a4d6-4d95-94e4-01940c99aedb",
+    "Exist": true,
+    "OperDate": "2024-12-05T00:00:00.000Z"
+  },
+  {
+    "TreaMoveID": "1dac299c-9b5a-4fb4-8ab5-fcdf6f9f7336",
+    "CarID": "a8fbd7bf-b3f0-4f75-8b5d-6f0a078bef37",
+    "OpenBalance": "0.00",
+    "Cridit": "0.00",
+    "Debit": "0.00",
+    "FinalBalance": "0.00",
+    "UserID": "3b0fd66b-a4d6-4d95-94e4-01940c99aedb",
+    "Exist": true,
+    "OperDate": "2024-12-05T00:00:00.000Z"
+  }
+]

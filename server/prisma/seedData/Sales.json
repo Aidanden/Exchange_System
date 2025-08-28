@@ -1,0 +1,16 @@
+[
+    {
+        "SaleID":"1dac299c-9b5a-4fb4-8ab5-fcdf6f9f0fff",
+        "BillNum":"1000001",
+        "CustID":"aa076cf0-2af4-42d1-a65a-e21048900cdc",
+        "CarID":"1dac299c-9b5a-4fb4-8ab5-fcdf6f9f0298",
+        "SalePrice":"5.74",
+        "Value":"5000",
+        "TotalPrice":"28700",
+        "BillDate":"2024-12-05T00:00:00.000Z",
+        "UserID":"3b0fd66b-a4d6-4d95-94e4-01940c99aedb",
+        "Exist":true,
+        "OperDate":"2024-12-05T00:00:00.000Z"
+
+    }
+]

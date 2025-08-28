@@ -1,0 +1,10 @@
+[
+    {
+        "PriceTypeID": 1,
+        "PriceType": "سعر مصرف ليبيا المركزي"
+    },
+    {
+        "PriceTypeID": 2,
+        "PriceType": "سعر الجمهور"
+    }
+]

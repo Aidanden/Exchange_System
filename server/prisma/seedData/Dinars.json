@@ -1,0 +1,36 @@
+[
+    {
+        "DinarID": "1dac7777-9b5a-4fb4-8ab5-fcdf6f9f7111",
+        "BillNum": "0000001",
+        "OpenBalance": "10000000",
+        "Cridit": "566000",
+        "Debit": "0.00",
+        "FinalBalance": "9434000",
+        "UserID": "3b0fd66b-a4d6-4d95-94e4-01940c99aedb",
+        "Exist": true,
+        "OperDate": "2024-12-05T00:00:00.000Z"
+    },
+    {
+        "DinarID": "1dac7777-9b5a-4fb4-8ab5-fcdf6f9f7112",
+        "BillNum": "0000002",
+        "OpenBalance": "9434000",
+        "Cridit": "30500",
+        "Debit": "0.00",
+        "FinalBalance": "9403500",
+        "UserID": "3b0fd66b-a4d6-4d95-94e4-01940c99aedb",
+        "Exist": true,
+        "OperDate": "2024-12-05T00:00:00.000Z"
+    },
+    {
+        "DinarID": "1dac7777-9b5a-4fb4-8ab5-fcdf6f9f7113",
+        "BillNum": "0000003",
+        "OpenBalance": "9403500",
+        "Cridit": "3210",
+        "Debit": "0.00",
+        "FinalBalance": "9400290",
+        "UserID": "3b0fd66b-a4d6-4d95-94e4-01940c99aedb",
+        "Exist": true,
+        "OperDate": "2024-12-05T00:00:00.000Z"
+    }
+
+]

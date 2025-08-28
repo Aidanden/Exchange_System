@@ -1,0 +1,32 @@
+[
+    {
+        "PriceID": "1dac7777-9b5a-4fb4-8ab5-fcdf6000111",
+        "CarID": "1dac299c-9b5a-4fb4-8ab5-fcdf6f9f0298",
+        "PriceType": 1,
+        "SalePrice": "5.75",
+        "BuyPrice": "5.66",
+        "UserID": "0880eb85-2a08-4898-8aae-3cf90c48b08b",
+        "Exist": true,
+        "OperDate": "2024-12-05T00:00:00.000Z"
+    },
+    {
+        "PriceID": "1dac7777-9b5a-4fb4-8ab5-fcdf6000112",
+        "CarID": "5a34add7-30f1-4878-a0cc-e45556f5bfe9",
+        "PriceType": 1,
+        "SalePrice": "5.99",
+        "BuyPrice": "5.90",
+        "UserID": "0880eb85-2a08-4898-8aae-3cf90c48b08b",
+        "Exist": true,
+        "OperDate": "2024-12-05T00:00:00.000Z"
+    },
+    {
+        "PriceID": "1dac7777-9b5a-4fb4-8ab5-fcdf6000113",
+        "CarID": "a8fbd7bf-b3f0-4f75-8b5d-6f0a078bef37",
+        "PriceType": 1,
+        "SalePrice": "6.40",
+        "BuyPrice": "6.32",
+        "UserID": "0880eb85-2a08-4898-8aae-3cf90c48b08b",
+        "Exist": true,
+        "OperDate": "2024-12-05T00:00:00.000Z"
+    }
+]

@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root,
+.app {
+  font-size: 16px;
+  font-family: "Tajawal", sans-serif;
+  @apply bg-slate-50;
+  @apply text-gray-900;
+}
+
+@font-face {
+  font-family: 'Tajawal';
+  src: url('./fonts/Tajawal-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@media (min-width:768px) {
+  .custom-grid-rows {
+    grid-template-rows: repeat(8,20vh);
+  }
+}
+
+@media (min-width: 1280px){
+  .custom-grid-rows {
+    grid-template-rows: repeat(8,7.5vh);
+  }
+}
