@@ -11,9 +11,13 @@ export const listCustomers = async (req: Request, res: Response) => {
     const natId = (req.query.natId as string) || undefined;
     const existParam = req.query.exist as string | undefined;
     const exist = existParam === undefined ? true : existParam === "true";
+    const customerTypeParam = req.query.customerType as string | undefined;
+    const customerType = customerTypeParam === undefined ? undefined : customerTypeParam === "true";
 
     const where: any = {
       Exist: exist,
+      // إذا لم يتم تحديد نوع العميل، نعرض فقط العملاء من السوق (CustomerType = true)
+      ...(customerType !== undefined ? { CustomerType: customerType } : { CustomerType: true }),
       ...(natId ? { NatID: natId } : {}),
       ...(search
         ? {
@@ -27,6 +31,9 @@ export const listCustomers = async (req: Request, res: Response) => {
           }
         : {}),
     };
+
+    console.log("Filter - CustomerType:", customerType !== undefined ? customerType : true);
+    console.log("This will show customers with CustomerType =", customerType !== undefined ? customerType : true);
 
     const [total, customers] = await Promise.all([
       prisma.customers.count({ where }),
@@ -82,7 +89,12 @@ export const createCustomer = async (req: Request,res: Response): Promise<void> 
       Address,
       Phone,
       UserID,
+      CustomerType,
     } = req.body;
+
+    // للتأكد من القيم المستلمة
+    console.log("Received CustomerType:", CustomerType);
+    console.log("Type of CustomerType:", typeof CustomerType);
 
     if (!Customer || !NatID) {
       res.status(400).json({ error: "Customer and NatID are required" });
@@ -102,6 +114,7 @@ export const createCustomer = async (req: Request,res: Response): Promise<void> 
         Phone: Phone || null,
         UserID: UserID || "9e2895ae-4afe-4ff2-b3b3-be15cf1c82d6",
         Exist: true,
+        CustomerType: CustomerType !== undefined ? CustomerType : true,
       },
     });
 
@@ -121,6 +134,10 @@ export const updateCustomer = async (req: Request, res: Response) => {
     const { id } = req.params;
     const data = req.body;
 
+    // للتأكد من القيم المستلمة
+    console.log("Update - Received CustomerType:", data.CustomerType);
+    console.log("Update - Type of CustomerType:", typeof data.CustomerType);
+
     const updated = await prisma.customers.update({
       where: { CustID: id },
       data: {
@@ -133,6 +150,7 @@ export const updateCustomer = async (req: Request, res: Response) => {
         Address: data.Address ?? null,
         Phone: data.Phone ?? null,
         UserID: data.UserID || "9e2895ae-4afe-4ff2-b3b3-be15cf1c82d6",
+        CustomerType: data.CustomerType !== undefined ? data.CustomerType : true,
       },
     });
     res.json(updated);

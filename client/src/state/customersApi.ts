@@ -14,7 +14,7 @@ export const customersApi = createApi({
   reducerPath: "customersApi",
   tagTypes: ["Customers"],
   endpoints: (build) => ({
-    listCustomers: build.query<ListResponse, { page?: number; limit?: number; search?: string; natId?: string; exist?: boolean } | void>({
+    listCustomers: build.query<ListResponse, { page?: number; limit?: number; search?: string; natId?: string; exist?: boolean; customerType?: boolean } | void>({
       query: (args) => {
         const params = new URLSearchParams();
         const page = args?.page ?? 1;
@@ -24,6 +24,7 @@ export const customersApi = createApi({
         if (args?.search) params.set("search", args.search);
         if (args?.natId) params.set("natId", args.natId);
         if (typeof args?.exist === "boolean") params.set("exist", String(args.exist));
+        if (typeof args?.customerType === "boolean") params.set("customerType", String(args.customerType));
         return `/api/customers?${params.toString()}`;
       },
       providesTags: (result) =>

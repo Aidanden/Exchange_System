@@ -10,6 +10,7 @@ import nationalitRoutes from "./routes/nationalitRoutes";
 import categoriesRoute from "./routes/categoriesRoute"
 import currencyRoutes from "./routes/currenciesRoute";
 import customersRoute from "./routes/customersRoute";
+import buysRoute from "./routes/buysRoute";
 
 /*CONFIGRATION*/
 dotenv.config();
@@ -33,6 +34,7 @@ app.use('/api/nationalities', nationalitRoutes);
 app.use('/api/categories', categoriesRoute);
 app.use('/api/currencies', currencyRoutes);
 app.use('/api', customersRoute);
+app.use('/api/buys', buysRoute);
 
 // Health check endpoint
 app.get("/health", (req, res) => {

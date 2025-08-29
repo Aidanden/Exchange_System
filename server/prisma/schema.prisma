@@ -64,17 +64,13 @@ model Customers {
   UserID         String
   Exist          Boolean
   OperDate       DateTime        @default(now())
+  CustomerType   Boolean?
   Buys           Buys[]
   Nationality    Nationalits     @relation(fields: [NatID], references: [NatID])
   User           Users           @relation(fields: [UserID], references: [UserID])
   Sales          Sales[]
 }
 
-model BuyTypes {
-  BuyTypeID Int    @id
-  BuyType   String
-  Buys      Buys[]
-}
 
 model Carrences {
   CarID             String              @id @default(cuid())
@@ -95,7 +91,6 @@ model Carrences {
 model Buys {
   BuyID      String    @id
   BillNum    String
-  BuyTypeID  Int       // إصلاح اسم الحقل
   CarID      String
   Value      Decimal   @db.Decimal(18, 3)
   BuyPrice   Decimal   @db.Decimal(18, 3)
@@ -108,7 +103,6 @@ model Buys {
   Exist      Boolean
   OperDate   DateTime  @default(now())
   User       Users     @relation(fields: [UserID], references: [UserID])
-  BuyType    BuyTypes  @relation(fields: [BuyTypeID], references: [BuyTypeID])
   Carrence   Carrences @relation(fields: [CarID], references: [CarID])
   Customer   Customers @relation(fields: [CustID], references: [CustID])
 }

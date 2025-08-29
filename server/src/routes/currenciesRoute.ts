@@ -6,6 +6,7 @@ import {
   getCurrencies,
   getCurrency,
   addCurrencyBalance,
+  updateCurrencyBalance,
 } from "../controllers/currenciesController";
 
 const router = express.Router();
@@ -27,5 +28,8 @@ router.get("/currency/:carID", getCurrency);
 
 // إضافة رصيد للعملة وتسجيل حركة خزينة
 router.post("/add-balance/:carID", addCurrencyBalance);
+
+// تحديث رصيد العملة إلى قيمة محددة
+router.put("/update-balance/:carID", updateCurrencyBalance);
 
 export default router;

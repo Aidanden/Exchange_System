@@ -132,6 +132,11 @@ function CustomerModal() {
   const onClose = () => setOpenState({ open: false, mode: "create" });
   const onSubmit = async () => {
     if (!form.Customer || !form.NatID) return alert("الاسم والجنسية مطلوبة");
+    
+    // للتأكد من القيم المرسلة
+    console.log("Form data being sent:", form);
+    console.log("CustomerType value:", form.CustomerType);
+    
     if (openState.mode === "create") {
       await addCustomer(form as any).unwrap();
     } else if (openState.mode === "edit" && openState.customer) {
@@ -156,6 +161,14 @@ function CustomerModal() {
           <input className="border px-3 py-2 rounded" placeholder="العنوان" value={form.Address ?? ""} onChange={e => setForm({ ...form, Address: e.target.value })} />
           <input className="border px-3 py-2 rounded" placeholder="رقم وطني" value={form.NationalNumber ?? ""} onChange={e => setForm({ ...form, NationalNumber: e.target.value })} />
           <input className="border px-3 py-2 rounded" placeholder="رقم جواز" value={form.passportNumber ?? ""} onChange={e => setForm({ ...form, passportNumber: e.target.value })} />
+          <select 
+            className="border px-3 py-2 rounded" 
+            value={form.CustomerType === undefined ? "true" : String(form.CustomerType)} 
+            onChange={e => setForm({ ...form, CustomerType: e.target.value === "true" })}
+          >
+            <option value="true">السوق</option>
+            <option value="false">مصرف ليبيا المركزي</option>
+          </select>
         </div>
         <div className="flex gap-2 justify-end">
           <button className="px-3 py-2 border rounded" onClick={onClose}>إلغاء</button>

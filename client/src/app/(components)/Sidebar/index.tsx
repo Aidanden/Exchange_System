@@ -115,6 +115,12 @@ const Sidebar = () => {
           isCollapsed={isSidebarCollapsed}
         />
         <SidebarLink
+          href="/buys"
+          icon={CircleDollarSign}
+          label="الشراء"
+          isCollapsed={isSidebarCollapsed}
+        />
+        <SidebarLink
           href="/customers"
           icon={UsersRound}
           label="الزبائن"

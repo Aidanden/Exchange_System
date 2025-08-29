@@ -63,6 +63,21 @@ export const currenciesApi = createApi({
         { type: "Currencies", id: "LIST" },
       ],
     }),
+
+    updateCurrencyBalance: build.mutation<
+      { message: string },
+      { carID: string; newBalance: number }
+    >({
+      query: ({ carID, newBalance }) => ({
+        url: `/api/currencies/update-balance/${carID}`,
+        method: "PUT",
+        body: { newBalance },
+      }),
+      invalidatesTags: (_res, _err, { carID }) => [
+        { type: "Currency", id: carID },
+        { type: "Currencies", id: "LIST" },
+      ],
+    }),
   }),
 });
 
@@ -73,6 +88,7 @@ export const {
   useUpdateCurrencyMutation,
   useDeleteCurrencyMutation,
   useAddCurrencyBalanceMutation,
+  useUpdateCurrencyBalanceMutation,
 } = currenciesApi;
 
 

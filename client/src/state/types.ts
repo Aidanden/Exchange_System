@@ -25,13 +25,13 @@ export interface Customers {
   UserID: string;
   Exist: boolean;
   OperDate: Date | string;
+  CustomerType?: boolean | null;
   Nationality?: { NatID: string; Nationality: string } | null;
 }
   
   export interface Buys {
     BuyID: string;
     BillNum: string;
-    BuytTypeID: number;
     CarID: string;
     Value: Decimal;
     BuyPrice: Decimal;
@@ -43,6 +43,9 @@ export interface Customers {
     UserID: string;
     Exist: boolean;
     OperDate: Date;
+    Carrence?: Currency;
+    Customer?: Customers;
+    User?: { UserName: string };
   }
 
   export interface Sales {

@@ -224,3 +224,49 @@ export const addCurrencyBalance = async (
     res.status(500).json({ error: "حدث خطأ أثناء إضافة الرصيد." });
   }
 };
+
+// تحديث رصيد العملة إلى قيمة محددة
+export const updateCurrencyBalance = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const paramCarIdRaw = (req.params.carID ?? "").toString();
+    const queryCarIdRaw = (typeof req.query.carID === "string" ? req.query.carID : "").toString();
+    let carID = (paramCarIdRaw || queryCarIdRaw).trim();
+    if (carID.startsWith(":")) carID = carID.slice(1);
+    try { carID = decodeURIComponent(carID); } catch {}
+
+    const newBalanceRaw = req.body?.newBalance;
+    const newBalance = Number(newBalanceRaw);
+    if (!carID) {
+      res.status(400).json({ message: "carID مطلوب" });
+      return;
+    }
+    if (!Number.isFinite(newBalance) || newBalance < 0) {
+      res.status(400).json({ message: "قيمة غير صالحة للرصيد" });
+      return;
+    }
+
+    // جلب العملة الحالية
+    const current = await prisma.carrences.findUnique({ where: { CarID: carID } });
+    if (!current || current.Exist === false) {
+      res.status(404).json({ message: "العملة غير موجودة." });
+      return;
+    }
+
+    // تحديث رصيد العملة
+    const updatedCurrency = await prisma.carrences.update({
+      where: { CarID: carID },
+      data: { Balance: new Decimal(newBalance) },
+    });
+
+    res.status(200).json({
+      message: "تم تحديث رصيد العملة بنجاح.",
+      updatedCurrency,
+    });
+  } catch (error) {
+    console.error("Error updating balance:", error);
+    res.status(500).json({ error: "حدث خطأ أثناء تحديث الرصيد." });
+  }
+};
