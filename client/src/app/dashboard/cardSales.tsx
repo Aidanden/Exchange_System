@@ -1,12 +1,96 @@
-import React from 'react'
+import { useGetDashboardMetricsQuery } from '@/state/dashboardApi';
+import React from 'react';
+import { TrendingUp, DollarSign, ShoppingBag, Calendar } from 'lucide-react';
 
-type Props = {}
+const cardSales = () => {
+  const { data, isLoading } = useGetDashboardMetricsQuery();
+  const salesData = data?.lastSales || [];
 
-const cardSales = (props: Props) => {
+  // حساب الإحصائيات
+  const totalSales = salesData.length;
+  const totalValue = salesData.reduce((sum, sale) => sum + Number(sale.TotalPrice), 0);
+  const averageValue = totalSales > 0 ? totalValue / totalSales : 0;
+
   return (
-    <div className="row-span-2 xl:row-span-3 col-span-1 md:col-span-2 xl:col-span-1 bg-gray-500">
-    cardSales</div>
-  )
-}
+    <div className="row-span-2 xl:row-span-3 col-span-1 md:col-span-2 xl:col-span-1 bg-white shadow-md rounded-2xl">
+      {isLoading ? (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-lg">جاري التحميل ...</div>
+        </div>
+      ) : (
+        <>
+          {/* HEADER */}
+          <div>
+            <h2 className="text-lg font-bold mb-2 px-7 pt-5 flex items-center">
+              <ShoppingBag className="w-5 h-5 ml-2 text-orange-600" />
+              المبيعات
+            </h2>
+            <hr />
+          </div>
 
-export default cardSales
+          {/* STATISTICS */}
+          <div className="px-7 mt-5">
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="bg-orange-50 p-3 rounded-lg">
+                <div className="flex items-center">
+                  <DollarSign className="w-5 h-5 text-orange-600 ml-2" />
+                  <div>
+                    <p className="text-xs text-gray-600">إجمالي المبيعات</p>
+                    <p className="text-lg font-bold text-orange-600">{totalValue.toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-green-50 p-3 rounded-lg">
+                <div className="flex items-center">
+                  <TrendingUp className="w-5 h-5 text-green-600 ml-2" />
+                  <div>
+                    <p className="text-xs text-gray-600">متوسط القيمة</p>
+                    <p className="text-lg font-bold text-green-600">{averageValue.toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* RECENT SALES */}
+          <div className="px-7 flex-1">
+            <h3 className="text-md font-semibold mb-3 flex items-center">
+              <Calendar className="w-4 h-4 ml-2 text-gray-600" />
+              آخر المبيعات
+            </h3>
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {salesData.map((sale) => (
+                <div key={sale.SaleID} className="bg-gray-50 p-2 rounded-lg border-r-3 border-orange-500">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="font-medium text-gray-800 text-sm">فاتورة: {sale.BillNum}</p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(sale.BillDate).toLocaleDateString('ar-SA')}
+                      </p>
+                    </div>
+                    <div className="text-left">
+                      <p className="font-bold text-orange-600 text-sm">
+                        {Number(sale.TotalPrice).toLocaleString()} دينار
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* FILTER */}
+          <div className="px-7 pb-4">
+            <select className="w-full shadow-sm border border-gray-300 bg-white p-2 rounded-lg text-sm">
+              <option value="daily">اليوم</option>
+              <option value="weekly">الأسبوع</option>
+              <option value="monthly">الشهر</option>
+            </select>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+export default cardSales;

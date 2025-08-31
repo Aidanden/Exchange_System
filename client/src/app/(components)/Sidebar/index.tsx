@@ -11,6 +11,8 @@ import {
   SquareUserRound,
   DollarSign,
   UsersRound,
+  ShoppingCart,
+  TrendingDown,
 } from "lucide-react"; // تأكد من استيراد الأيقونات المطلوبة
 import { usePathname } from "next/navigation";
 import React from "react";
@@ -108,6 +110,12 @@ const Sidebar = () => {
           label="الجنسيات"
           isCollapsed={isSidebarCollapsed}
         />
+         <SidebarLink
+          href="/customers"
+          icon={UsersRound}
+          label="الزبائن"
+          isCollapsed={isSidebarCollapsed}
+        />
         <SidebarLink
           href="/currencies"
           icon={DollarSign}
@@ -121,11 +129,23 @@ const Sidebar = () => {
           isCollapsed={isSidebarCollapsed}
         />
         <SidebarLink
-          href="/customers"
-          icon={UsersRound}
-          label="الزبائن"
+          href="/buys-list"
+          icon={ShoppingCart}
+          label="قائمة المشتريات"
           isCollapsed={isSidebarCollapsed}
         />
+        <SidebarLink
+          href="/sales"
+          icon={TrendingDown}
+          label="البيع"
+          isCollapsed={isSidebarCollapsed}
+        />
+        <SidebarLink
+          href="/sales-list"
+          icon={ShoppingCart}
+          label="قائمة المبيعات"
+          isCollapsed={isSidebarCollapsed}
+        />      
         <SidebarLink
           href="/report"
           icon={RepeatIcon}

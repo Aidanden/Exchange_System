@@ -14,7 +14,7 @@ datasource db {
 }
 
 model Users {
-  UserID            String              @id
+  UserID            String              @id @default(cuid())
   UserName          String
   Email             String
   Customers         Customers[]
@@ -22,7 +22,6 @@ model Users {
   Carrences         Carrences[]
   Buys              Buys[]
   TreasuryMovements TreasuryMovements[]
-  Dinars            Dinars[]
   Sales             Sales[]
   ExpenseItems      ExpenseItems[]
 
@@ -52,7 +51,7 @@ model Nationalits {
 }
 
 model Customers {
-  CustID         String          @id
+  CustID         String          @id @default(cuid())
   Customer       String
   NatID          String
   passportNumber String?
@@ -89,7 +88,7 @@ model Carrences {
 
 
 model Buys {
-  BuyID      String    @id
+  BuyID      String    @id @default(cuid())
   BillNum    String
   CarID      String
   Value      Decimal   @db.Decimal(18, 3)
@@ -108,7 +107,7 @@ model Buys {
 }
 
 model TreasuryMovements {
-  TreaMoveID   String    @id
+  TreaMoveID   String    @id @default(cuid())
   CarID        String
   OpenBalance  Decimal   @db.Decimal(18, 3)
   Cridit       Decimal   @db.Decimal(18, 3)
@@ -122,30 +121,17 @@ model TreasuryMovements {
   User         Users     @relation(fields: [UserID], references: [UserID])
 }
 
-model Dinars {
-  DinarID      String   @id
-  BillNum      String
-  OpenBalance  Decimal  @db.Decimal(18, 3)
-  Cridit       Decimal  @db.Decimal(18, 3)
-  Debit        Decimal  @db.Decimal(18, 3)
-  FinalBalance Decimal  @db.Decimal(18, 3)
-  UserID       String
-  Exist        Boolean
-  OperDate     DateTime @default(now())
-  User         Users    @relation(fields: [UserID], references: [UserID])
-}
-
 model Sales {
-  SaleID     String    @id
+  SaleID     String    @id @default(cuid())
   BillNum    String
   CustID     String
   CarID      String
   SalePrice  Decimal   @db.Decimal(18, 3)
-  From       String?
-  To         String?
+  FirstNum   String?
+  LastNum    String?
   Value      Decimal   @db.Decimal(18, 3)
   TotalPrice Decimal   @db.Decimal(18, 3)
-  BillDate   DateTime  @default(now())
+  SaleDate   DateTime  @default(now())
   UserID     String
   Exist      Boolean
   OperDate   DateTime  @default(now())
@@ -155,7 +141,7 @@ model Sales {
 }
 
 model ExpenseItems {
-  ExpItemID       String            @id
+  ExpItemID       String            @id @default(cuid())
   ExpItem         String
   UserID          String
   Exist           Boolean
@@ -165,7 +151,7 @@ model ExpenseItems {
 }
 
 model ExpanseAccounts {
-  ExpAccId    String       @id
+  ExpAccId    String       @id @default(cuid())
   ExpItemID   String
   ExpValue    Decimal      @db.Decimal(18, 3)
   Statment    String?

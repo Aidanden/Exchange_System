@@ -54,14 +54,17 @@ export interface Customers {
     CustID: string;
     CarID: string;
     SalePrice: Decimal;
-    From: string | undefined;
-    To: string | undefined;
+    FirstNum: string | undefined;
+    LastNum: string | undefined;
     Value: Decimal;
     TotalPrice: Decimal;
-    BillDate: Date;
+    SaleDate: Date;
     UserID: string;
     Exist: boolean;
     OperDate: Date;
+    Carrence?: Currency;
+    Customer?: Customers;
+    User?: { UserName: string };
   }
 
   export interface ExpanseAccounts {

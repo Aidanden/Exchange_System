@@ -10,9 +10,10 @@ import {
 import { Currency } from "../../state/types";
 import { Coins, Search, Plus, Edit, Trash2 } from "lucide-react";
 import { useAddCurrencyBalanceMutation } from "../../state/currenciesApi";
+import { toast, Toaster } from "react-hot-toast";
 
 const CurrencyList = () => {
-  const { data: currencies, isLoading, error } = useGetCurrenciesQuery();
+  const { data: currencies, isLoading, error, refetch } = useGetCurrenciesQuery();
   const [addCurrency, { isLoading: isAdding, error: addError }] = useAddCurrencyMutation();
   const [updateCurrency] = useUpdateCurrencyMutation();
   const [deleteCurrency] = useDeleteCurrencyMutation();
@@ -45,7 +46,7 @@ const CurrencyList = () => {
 
   const handleAdd = async () => {
     if (!newCurrencyName) {
-      alert("يجب كتابة اسم العملة.");
+      toast.error("يجب كتابة اسم العملة.");
       return;
     }
     try {
@@ -58,9 +59,10 @@ const CurrencyList = () => {
       await addCurrency(newCurrency).unwrap();
       setNewCurrencyName("");
       setNewCurrencyCode("");
-      alert("تمت إضافة العملة بنجاح!");
+      toast.success("تمت إضافة العملة بنجاح!");
+      refetch();
     } catch (e: any) {
-      alert(e?.data?.error || "حدث خطأ أثناء إضافة العملة.");
+      toast.error(e?.data?.error || "حدث خطأ أثناء إضافة العملة.");
     }
   };
 
@@ -71,7 +73,7 @@ const CurrencyList = () => {
 
   const handleEditSave = async () => {
     if (!currentEditData?.Carrency) {
-      alert("يجب كتابة اسم العملة.");
+      toast.error("يجب كتابة اسم العملة.");
       return;
     }
 
@@ -84,27 +86,32 @@ const CurrencyList = () => {
         }
       }).unwrap();
       setEditModalOpen(false);
-      alert("تم التعديل بنجاح!");
+      toast.success("تم التعديل بنجاح!");
+      refetch();
     } catch (e: any) {
       console.error("Error updating currency:", e);
-      alert(e?.data?.error || "حدث خطأ أثناء التعديل.");
+      toast.error(e?.data?.error || "حدث خطأ أثناء التعديل.");
     }
   };
 
   const handleDelete = async (carID: string, currencyName: string, _balance: any) => {
-    const confirmDelete = confirm(`هل أنت متأكد من حذف العملة "${currencyName}"؟`);
-    if (confirmDelete) {
-      try {
-        setDeletingId(carID);
-        await deleteCurrency(carID).unwrap();
-        alert("تم حذف العملة بنجاح!");
-      } catch (e: any) {
-        console.error("Error deleting currency:", e);
-        const msg = e?.data?.message || e?.data?.error || e?.error || "حدث خطأ أثناء حذف العملة.";
-        alert(msg);
-      } finally {
-        setDeletingId(null);
-      }
+    setDeletingId(carID);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingId) return;
+
+    try {
+      await deleteCurrency(deletingId).unwrap();
+      toast.success("تم حذف العملة بنجاح!");
+      setDeletingId(null);
+      refetch();
+    } catch (e: any) {
+      console.error("Error deleting currency:", e);
+      const msg = e?.data?.message || e?.data?.error || e?.error || "حدث خطأ أثناء حذف العملة.";
+      toast.error(msg);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -118,56 +125,52 @@ const CurrencyList = () => {
     if (!balanceCarID) return;
     const amount = Number(balanceAmount);
     if (!Number.isFinite(amount) || amount <= 0) {
-      alert("يرجى إدخال مبلغ صالح أكبر من صفر.");
+      toast.error("يرجى إدخال مبلغ صالح أكبر من صفر.");
       return;
     }
     try {
       await addCurrencyBalance({ carID: balanceCarID, amount }).unwrap();
       setBalanceModalOpen(false);
-      alert("تمت إضافة الرصيد وتسجيل الحركة.");
+      toast.success("تمت إضافة الرصيد وتسجيل الحركة.");
+      refetch();
     } catch (e: any) {
       console.error(e);
-      alert(e?.data?.error || e?.error || "تعذر إضافة الرصيد.");
+      toast.error(e?.data?.error || e?.error || "تعذر إضافة الرصيد.");
     }
   };
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="flex items-center gap-2">
-          <Coins className="w-8 h-8 animate-spin text-blue-600" />
-          <span className="text-lg">جارٍ تحميل العملات...</span>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">جاري تحميل البيانات...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-red-500 text-center mt-10 p-4 bg-red-50 rounded-lg">
-        <Coins className="w-12 h-12 mx-auto mb-2 text-red-400" />
-        <p className="text-lg font-semibold">حدث خطأ أثناء تحميل البيانات</p>
-        <p className="text-sm mt-1">يرجى المحاولة مرة أخرى لاحقاً</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg text-red-600">حدث خطأ في تحميل البيانات</div>
       </div>
     );
   }
 
   const filteredCurrencies = currencies?.filter((currency: Currency) =>
     currency.Carrency.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    currency.CarrencyCode.toLowerCase().includes(searchTerm.toLowerCase())
+    (currency.CarrencyCode && currency.CarrencyCode.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <Coins className="w-8 h-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-800">إدارة العملات</h1>
+    <>
+      <Toaster position="top-right" />
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">قائمة العملات</h1>
+          <p className="text-gray-600">عرض وإدارة العملات المتاحة</p>
         </div>
 
         {/* نموذج الإضافة */}
-        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <div className="flex items-center gap-2 mb-4">
             <Plus className="w-5 h-5 text-green-600" />
             <h2 className="text-xl font-semibold text-gray-700">إضافة عملة جديدة</h2>
@@ -203,102 +206,108 @@ const CurrencyList = () => {
           )}
         </div>
 
-        {/* خانة البحث */}
-        <div className="mb-6">
-          <div className="relative max-w-md">
-            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="ابحث عن عملة..."
-              className="w-full py-3 pr-10 pl-4 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-            />
+        {/* Search and Controls */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+            <div className="flex-1 max-w-md">
+              <input
+                type="text"
+                placeholder="البحث عن عملة..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div className="text-sm text-gray-600">
+              إجمالي النتائج: {filteredCurrencies?.length || 0}
+            </div>
           </div>
         </div>
 
-        {/* قائمة العملات */}
+        {/* Currencies Table */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-700 flex items-center gap-2">
-              <Coins className="w-5 h-5 text-blue-600" />
-              قائمة العملات ({filteredCurrencies?.length || 0})
-            </h2>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    اسم العملة
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    رمز العملة
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    الرصيد الحالي
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    الإجراءات
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredCurrencies?.map((currency) => (
+                  <tr key={currency.CarID} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {currency.Carrency}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                        {currency.CarrencyCode}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {getNumericBalance(currency.Balance).toFixed(4)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openBalanceModal(currency.CarID)}
+                          className="text-green-600 hover:text-green-900 px-3 py-1 rounded bg-green-50 hover:bg-green-100 transition-colors"
+                        >
+                          إضافة رصيد
+                        </button>
+                        <button
+                          onClick={() => handleEditClick(currency)}
+                          className="text-blue-600 hover:text-blue-900 px-3 py-1 rounded bg-blue-50 hover:bg-blue-100 transition-colors"
+                        >
+                          تعديل
+                        </button>
+                        <button
+                          onClick={() => handleDelete(currency.CarID, currency.Carrency, currency.Balance)}
+                          className="text-red-600 hover:text-red-900 px-3 py-1 rounded bg-red-50 hover:bg-red-100 transition-colors"
+                        >
+                          حذف
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          
-          {!filteredCurrencies?.length ? (
-            <div className="text-center py-12">
-              <Coins className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-              <p className="text-gray-500 text-lg">لا توجد عملات مطابقة للبحث</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-200">
-              {filteredCurrencies.map((currency: Currency) => (
-                <div
-                  key={currency.CarID}
-                  className="px-6 py-4 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex justify-between items-center">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-800">
-                          {currency.Carrency}
-                        </h3>
-                        <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
-                          {currency.CarrencyCode}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <span>الرصيد: {getNumericBalance(currency.Balance)}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <button
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg shadow-sm hover:bg-green-700 transition-colors"
-                        onClick={() => openBalanceModal(currency.CarID)}
-                      >
-                        إضافة رصيد
-                      </button>
-                      <button
-                        className="px-4 py-2 bg-yellow-500 text-white rounded-lg shadow-sm hover:bg-yellow-600 transition-colors flex items-center gap-1"
-                        onClick={() => handleEditClick(currency)}
-                      >
-                        <Edit className="w-4 h-4" />
-                        تعديل
-                      </button>
-                      <button
-                        type="button"
-                        className="px-4 py-2 bg-red-500 text-white rounded-lg shadow-sm hover:bg-red-600 transition-colors flex items-center gap-1"
-                        onClick={() => handleDelete(currency.CarID, currency.Carrency, currency.Balance)}
-                        aria-busy={deletingId === currency.CarID}
-                      >
-                        {deletingId === currency.CarID ? (
-                          <span className="animate-pulse">جارِ الحذف...</span>
-                        ) : (
-                          <>
-                            <Trash2 className="w-4 h-4" />
-                            حذف
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+
+          {/* Empty State */}
+          {filteredCurrencies?.length === 0 && (
+            <div className="text-center py-8">
+              <div className="text-gray-500">لا توجد عملات</div>
             </div>
           )}
         </div>
 
-        {/* نافذة التعديل */}
+        {/* Edit Modal */}
         {isEditModalOpen && currentEditData && (
-          <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md mx-4">
-              <div className="flex items-center gap-2 mb-4">
-                <Edit className="w-5 h-5 text-yellow-600" />
-                <h2 className="text-xl font-bold text-gray-800">تعديل العملة</h2>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">تعديل العملة</h2>
+                <button
+                  onClick={() => setEditModalOpen(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
               </div>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -336,62 +345,108 @@ const CurrencyList = () => {
                   />
                 </div>
               </div>
-              
-              <div className="flex justify-end gap-3 mt-6">
+
+              <div className="flex gap-4 pt-4">
                 <button
-                  className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-                  onClick={() => setEditModalOpen(false)}
+                  onClick={handleEditSave}
+                  className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  إلغاء
+                  حفظ التعديلات
                 </button>
                 <button
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1"
-                  onClick={handleEditSave}
+                  onClick={() => setEditModalOpen(false)}
+                  className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition-colors"
                 >
-                  <Edit className="w-4 h-4" />
-                  حفظ التعديلات
+                  إلغاء
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {isBalanceModalOpen && (
-          <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm mx-4">
-              <h3 className="text-lg font-bold text-gray-800 mb-4">إضافة رصيد</h3>
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-700">المبلغ</label>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  min="0"
-                  step="0.01"
-                  value={balanceAmount}
-                  onChange={(e) => setBalanceAmount(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  placeholder="0.00"
-                />
+        {/* Delete Confirmation Modal */}
+        {deletingId && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <div className="mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">تأكيد الحذف</h2>
+                <p className="text-gray-600">
+                  هل أنت متأكد من حذف هذه العملة؟
+                </p>
+                <p className="text-sm text-red-600 mt-2">
+                  ⚠️ هذا الإجراء لا يمكن التراجع عنه
+                </p>
               </div>
-              <div className="flex justify-end gap-3 mt-6">
+
+              <div className="flex gap-4">
                 <button
-                  className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-                  onClick={() => setBalanceModalOpen(false)}
+                  onClick={handleDeleteConfirm}
+                  className="flex-1 bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  نعم، احذف
+                </button>
+                <button
+                  onClick={() => setDeletingId(null)}
+                  className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition-colors"
                 >
                   إلغاء
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Balance Modal */}
+        {isBalanceModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">إضافة رصيد</h2>
                 <button
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                  onClick={submitAddBalance}
+                  onClick={() => setBalanceModalOpen(false)}
+                  className="text-gray-500 hover:text-gray-700"
                 >
-                  إضافة
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    المبلغ
+                  </label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="0.0001"
+                    value={balanceAmount}
+                    onChange={(e) => setBalanceAmount(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    placeholder="0.0000"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <button
+                  onClick={submitAddBalance}
+                  className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  إضافة الرصيد
+                </button>
+                <button
+                  onClick={() => setBalanceModalOpen(false)}
+                  className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition-colors"
+                >
+                  إلغاء
                 </button>
               </div>
             </div>
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 };
 

@@ -252,6 +252,92 @@ export const getNextBillNumber = async (req: Request, res: Response): Promise<vo
   }
 };
 
+// تعديل عملية شراء
+export const updateBuy = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const {
+      CarID,
+      Value,
+      BuyPrice,
+      TotalPrice,
+      CustID,
+      FirstNum,
+      LastNum,
+      PaymentCurrencyID,
+    } = req.body;
+
+    // التحقق من وجود عملية الشراء
+    const existingBuy = await prisma.buys.findUnique({
+      where: { BuyID: id },
+      include: {
+        Carrence: true,
+      },
+    });
+
+    if (!existingBuy || !existingBuy.Exist) {
+      res.status(404).json({ error: "عملية الشراء غير موجودة" });
+      return;
+    }
+
+    // بدء المعاملة
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. تعديل عملية الشراء
+      const updatedBuy = await tx.buys.update({
+        where: { BuyID: id },
+        data: {
+          CarID: CarID || existingBuy.CarID,
+          Value: Value ? new Decimal(Value) : existingBuy.Value,
+          BuyPrice: BuyPrice ? new Decimal(BuyPrice) : existingBuy.BuyPrice,
+          TotalPrice: TotalPrice ? new Decimal(TotalPrice) : existingBuy.TotalPrice,
+          CustID: CustID || existingBuy.CustID,
+          FirstNum: FirstNum !== undefined ? FirstNum : existingBuy.FirstNum,
+          LastNum: LastNum !== undefined ? LastNum : existingBuy.LastNum,
+        },
+        include: {
+          Carrence: true,
+          Customer: {
+            include: {
+              Nationality: true,
+            },
+          },
+          User: {
+            select: {
+              UserName: true,
+            },
+          },
+        },
+      });
+
+      // 2. إضافة حركة خزينة للتوثيق
+      await tx.treasuryMovements.create({
+        data: {
+          TreaMoveID: crypto.randomUUID(),
+          CarID: updatedBuy.CarID,
+          OpenBalance: new Decimal(0), // سيتم حساب الرصيد لاحقاً
+          Cridit: new Decimal(0),
+          Debit: new Decimal(0),
+          FinalBalance: new Decimal(0),
+          Statment: `تعديل عملية شراء - فاتورة رقم ${updatedBuy.BillNum}`,
+          UserID: existingBuy.UserID,
+          Exist: true,
+        },
+      });
+
+      return updatedBuy;
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error("updateBuy error", error);
+    if (error instanceof Error) {
+      res.status(400).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: "خطأ في الخادم" });
+    }
+  }
+};
+
 // حذف عملية شراء (soft delete)
 export const deleteBuy = async (req: Request, res: Response): Promise<void> => {
   try {

@@ -1,21 +1,21 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import type { Buys } from "./types";
+import type { Sales } from "./types";
 import { currenciesApi } from "./currenciesApi";
 
 type ListResponse = {
-  data: Buys[];
+  data: Sales[];
   total: number;
   page: number;
   pageSize: number;
   totalPages: number;
 };
 
-export const buysApi = createApi({
+export const salesApi = createApi({
   baseQuery: fetchBaseQuery({ baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL }),
-  reducerPath: "buysApi",
-  tagTypes: ["Buys", "Currencies", "Currency"],
+  reducerPath: "salesApi",
+  tagTypes: ["Sales", "Currencies", "Currency"],
   endpoints: (build) => ({
-    listBuys: build.query<ListResponse, { page?: number; limit?: number; search?: string; custId?: string; exist?: boolean } | void>({
+    listSales: build.query<ListResponse, { page?: number; limit?: number; search?: string; custId?: string; exist?: boolean } | void>({
       query: (args) => {
         const params = new URLSearchParams();
         const page = args?.page ?? 1;
@@ -25,26 +25,26 @@ export const buysApi = createApi({
         if (args?.search) params.set("search", args.search);
         if (args?.custId) params.set("custId", args.custId);
         if (typeof args?.exist === "boolean") params.set("exist", String(args.exist));
-        return `/api/buys?${params.toString()}`;
+        return `/api/sales?${params.toString()}`;
       },
       providesTags: (result) =>
         result?.data
           ? [
-              ...result.data.map((b) => ({ type: "Buys" as const, id: b.BuyID })),
-              { type: "Buys", id: "LIST" },
+              ...result.data.map((s) => ({ type: "Sales" as const, id: s.SaleID })),
+              { type: "Sales", id: "LIST" },
             ]
-          : [{ type: "Buys", id: "LIST" }],
+          : [{ type: "Sales", id: "LIST" }],
     }),
 
-    getBuy: build.query<Buys, string>({
-      query: (id) => `/api/buys/${id}`,
-      providesTags: (result, _err, id) => [{ type: "Buys", id }],
+    getSale: build.query<Sales, string>({
+      query: (id) => `/api/sales/${id}`,
+      providesTags: (result, _err, id) => [{ type: "Sales", id }],
     }),
 
-    createBuy: build.mutation<Buys, Partial<Buys> & { PaymentCurrencyID: string }>({
-      query: (body) => ({ url: "/api/buys", method: "POST", body }),
+    createSale: build.mutation<Sales, Partial<Sales> & { PaymentCurrencyID: string }>({
+      query: (body) => ({ url: "/api/sales", method: "POST", body }),
       invalidatesTags: [
-        { type: "Buys", id: "LIST" },
+        { type: "Sales", id: "LIST" },
         { type: "Currencies", id: "LIST" }, // تحديث قائمة العملات
       ],
       // تحديث أرصدة العملات المحددة
@@ -80,26 +80,27 @@ export const buysApi = createApi({
       },
     }),
 
-    updateBuy: build.mutation<Buys, { id: string; data: Partial<Buys> }>({
-      query: ({ id, data }) => ({ url: `/api/buys/${id}`, method: "PUT", body: data }),
+    updateSale: build.mutation<Sales, { id: string; data: Partial<Sales> }>({
+      query: ({ id, data }) => ({ url: `/api/sales/${id}`, method: "PUT", body: data }),
       invalidatesTags: (result, _err, { id }) => [
-        { type: "Buys", id },
-        { type: "Buys", id: "LIST" },
+        { type: "Sales", id },
+        { type: "Sales", id: "LIST" },
         { type: "Currencies", id: "LIST" },
       ],
     }),
 
-    deleteBuy: build.mutation<void, string>({
-      query: (BuyID) => ({ url: `/api/buys/${BuyID}`, method: "DELETE" }),
-      invalidatesTags: (result, _err, id) => [{ type: "Buys", id }, { type: "Buys", id: "LIST" }],
+    deleteSale: build.mutation<void, string>({
+      query: (SaleID) => ({ url: `/api/sales/${SaleID}`, method: "DELETE" }),
+      invalidatesTags: (result, _err, id) => [{ type: "Sales", id }, { type: "Sales", id: "LIST" }],
     }),
   }),
 });
 
 export const {
-  useListBuysQuery,
-  useGetBuyQuery,
-  useCreateBuyMutation,
-  useUpdateBuyMutation,
-  useDeleteBuyMutation,
-} = buysApi;
+  useListSalesQuery,
+  useGetSaleQuery,
+  useCreateSaleMutation,
+  useUpdateSaleMutation,
+  useDeleteSaleMutation,
+} = salesApi;
+

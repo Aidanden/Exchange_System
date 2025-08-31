@@ -11,6 +11,7 @@ import categoriesRoute from "./routes/categoriesRoute"
 import currencyRoutes from "./routes/currenciesRoute";
 import customersRoute from "./routes/customersRoute";
 import buysRoute from "./routes/buysRoute";
+import salesRoute from "./routes/salesRoute";
 
 /*CONFIGRATION*/
 dotenv.config();
@@ -35,6 +36,7 @@ app.use('/api/categories', categoriesRoute);
 app.use('/api/currencies', currencyRoutes);
 app.use('/api', customersRoute);
 app.use('/api/buys', buysRoute);
+app.use('/api/sales', salesRoute);
 
 // Health check endpoint
 app.get("/health", (req, res) => {

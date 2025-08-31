@@ -22,7 +22,7 @@ export const getDashboardMetrics = async (
     const lastSales = await prisma.sales.findMany({
       take: 2,
       orderBy: {
-        BillDate: "desc",
+        SaleDate: "desc",
       },
     });
     const Expanss = await prisma.expanseAccounts.findMany({

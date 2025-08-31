@@ -3,12 +3,14 @@ import { dashboardApi } from "./dashboardApi";
 import { nationalitsApi } from "./nationalitsApi";
 import { customersApi } from "./customersApi";
 import { buysApi } from "./buysApi";
+import { salesApi } from "./salesApi";
 
 export const rootApiReducer = combineReducers({
   [dashboardApi.reducerPath]: dashboardApi.reducer,
   [nationalitsApi.reducerPath]: nationalitsApi.reducer,
   [customersApi.reducerPath]: customersApi.reducer,
   [buysApi.reducerPath]: buysApi.reducer,
+  [salesApi.reducerPath]: salesApi.reducer,
 });
 
 export const rootApiMiddleware = [
@@ -16,4 +18,5 @@ export const rootApiMiddleware = [
   nationalitsApi.middleware,
   customersApi.middleware,
   buysApi.middleware,
+  salesApi.middleware,
 ];

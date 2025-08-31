@@ -10,9 +10,10 @@ import {
 } from "@/state/nationalitsApi";
 import { Nationality } from "@/state/types";
 import { Users, Plus, Search, Edit2, Trash2, X } from "lucide-react";
+import { toast, Toaster } from "react-hot-toast";
 
 const Nationalities = () => {
-  const { data: nationalities, isLoading, error } = useGetNationalitiesQuery();
+  const { data: nationalities, isLoading, error, refetch } = useGetNationalitiesQuery();
   const { data: categories, isLoading: categoriesLoading } =
     useGetCategoriesQuery();
   const [addNationality, { isLoading: isAdding, error: addError }] =
@@ -28,10 +29,11 @@ const Nationalities = () => {
   const [currentEditData, setCurrentEditData] = useState<Nationality | null>(
     null
   );
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleAdd = async () => {
     if (!newName || !selectedCategory) {
-      alert("يرجى تعبئة جميع الحقول قبل الإضافة.");
+      toast.error("يرجى تعبئة جميع الحقول قبل الإضافة.");
       return;
     }
     try {
@@ -42,8 +44,11 @@ const Nationalities = () => {
       await addNationality(newNationality).unwrap();
       setNewName("");
       setSelectedCategory("");
+      toast.success("تمت إضافة الجنسية بنجاح!");
+      refetch();
     } catch (e) {
       console.error("Error adding nationality:", e);
+      toast.error("حدث خطأ أثناء إضافة الجنسية.");
     }
   };
 
@@ -54,7 +59,7 @@ const Nationalities = () => {
 
   const handleEditSave = async () => {
     if (!currentEditData?.Nationality || !currentEditData?.CatID) {
-      alert("يرجى تعبئة جميع الحقول قبل الحفظ.");
+      toast.error("يرجى تعبئة جميع الحقول قبل الحفظ.");
       return;
     }
 
@@ -68,27 +73,48 @@ const Nationalities = () => {
         Categorie: null,
       }).unwrap();
       setEditModalOpen(false);
-      alert("تم التعديل بنجاح!");
+      toast.success("تم التعديل بنجاح!");
+      refetch();
     } catch (e) {
       console.error("Error updating nationality:", e);
-      alert("حدث خطأ أثناء التعديل.");
+      toast.error("حدث خطأ أثناء التعديل.");
     }
   };
 
   const handleDelete = async (id: any) => {
+    setDeletingId(id);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingId) return;
+
     try {
-      await deleteNationality(id).unwrap();
+      await deleteNationality(deletingId).unwrap();
+      toast.success("تم حذف الجنسية بنجاح!");
+      setDeletingId(null);
+      refetch();
     } catch (error) {
       console.error("Error deleting nationality:", error);
+      toast.error("حدث خطأ أثناء حذف الجنسية.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
   const isBusy = isLoading || categoriesLoading;
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">جاري تحميل البيانات...</div>
+      </div>
+    );
+  }
+
   if (error) {
     return (
-      <div className="text-red-500 text-center mt-10">
-        حدث خطأ أثناء تحميل البيانات
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg text-red-600">حدث خطأ في تحميل البيانات</div>
       </div>
     );
   }
@@ -98,15 +124,16 @@ const Nationalities = () => {
   );
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center gap-3 mb-6">
-          <Users className="w-8 h-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-800">إدارة الجنسيات</h1>
+    <>
+      <Toaster position="top-right" />
+      <div className="p-6 max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">قائمة الجنسيات</h1>
+          <p className="text-gray-600">عرض وإدارة الجنسيات المتاحة</p>
         </div>
 
         {/* نموذج الإضافة */}
-        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <div className="flex items-center gap-2 mb-4">
             <Plus className="w-5 h-5 text-green-600" />
             <h2 className="text-xl font-semibold text-gray-700">إضافة جنسية جديدة</h2>
@@ -137,7 +164,7 @@ const Nationalities = () => {
               disabled={isBusy || isAdding}
             >
               <Plus className="w-4 h-4" />
-              {isAdding ? "جارِ الإضافة..." : "إضافة"}
+              {isAdding ? "جارِ الإضافة..." : "إضافة الجنسية"}
             </button>
           </div>
           {addError && (
@@ -147,103 +174,103 @@ const Nationalities = () => {
           )}
         </div>
 
-        {/* خانة البحث */}
-        <div className="mb-6">
-          <div className="relative max-w-md">
-            <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="ابحث عن جنسية..."
-              className="w-full py-3 pr-10 pl-4 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-            />
+        {/* Search and Controls */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+            <div className="flex-1 max-w-md">
+              <input
+                type="text"
+                placeholder="البحث عن جنسية..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div className="text-sm text-gray-600">
+              إجمالي النتائج: {filteredNationalities?.length || 0}
+            </div>
           </div>
         </div>
 
-        {/* قائمة الجنسيات */}
+        {/* Nationalities Table */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-700 flex items-center gap-2">
-              <Users className="w-5 h-5 text-blue-600" />
-              قائمة الجنسيات ({filteredNationalities?.length || 0})
-            </h2>
-          </div>
-          {isBusy ? (
-            <div className="p-8 text-center text-gray-500">جارٍ التحميل...</div>
-          ) : !filteredNationalities?.length ? (
-            <div className="p-12 text-center text-gray-500">لا توجد جنسيات مطابقة للبحث</div>
-          ) : (
-            <div className="divide-y divide-gray-200">
-              {filteredNationalities.map((nationality) => (
-                <div
-                  key={nationality.NatID}
-                  className="px-6 py-4 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex justify-between items-center">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-1">
-                        <h3 className="text-lg font-semibold text-gray-800">
-                          {nationality.Nationality}
-                        </h3>
-                        {nationality.Categorie?.Categorie && (
-                          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
-                            {nationality.Categorie?.Categorie}
-                          </span>
-                        )}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    اسم الجنسية
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    الفئة
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    الإجراءات
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredNationalities?.map((nationality) => (
+                  <tr key={nationality.NatID} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {nationality.Nationality}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {nationality.Categorie?.Categorie && (
+                        <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                          {nationality.Categorie?.Categorie}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditClick(nationality)}
+                          className="text-blue-600 hover:text-blue-900 px-3 py-1 rounded bg-blue-50 hover:bg-blue-100 transition-colors"
+                        >
+                          تعديل
+                        </button>
+                        <button
+                          onClick={() => handleDelete(nationality.NatID)}
+                          className="text-red-600 hover:text-red-900 px-3 py-1 rounded bg-red-50 hover:bg-red-100 transition-colors"
+                        >
+                          حذف
+                        </button>
                       </div>
-                      
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        className="px-3 py-2 bg-yellow-500 text-white rounded-lg shadow-sm hover:bg-yellow-600 transition-colors flex items-center gap-1"
-                        onClick={() => handleEditClick(nationality)}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                        تعديل
-                      </button>
-                      <button
-                        type="button"
-                        className="px-3 py-2 bg-red-500 text-white rounded-lg shadow-sm hover:bg-red-600 transition-colors flex items-center gap-1"
-                        onClick={async () => {
-                          const confirmDelete = confirm(`هل أنت متأكد من حذف "${nationality.Nationality}"؟`);
-                          if (confirmDelete) {
-                            handleDelete(nationality.NatID);
-                          }
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        حذف
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Empty State */}
+          {filteredNationalities?.length === 0 && (
+            <div className="text-center py-8">
+              <div className="text-gray-500">لا توجد جنسيات</div>
             </div>
           )}
         </div>
 
-        {/* نافذة التعديل */}
+        {/* Edit Modal */}
         {isEditModalOpen && currentEditData && (
-          <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md mx-4">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Edit2 className="w-5 h-5 text-yellow-600" />
-                  <h2 className="text-xl font-bold text-gray-800">تعديل الجنسية</h2>
-                </div>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">تعديل الجنسية</h2>
                 <button
-                  className="p-2 rounded-full hover:bg-gray-100"
                   onClick={() => setEditModalOpen(false)}
-                  aria-label="إغلاق"
+                  className="text-gray-500 hover:text-gray-700"
                 >
-                  <X className="w-5 h-5 text-gray-600" />
+                  ✕
                 </button>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">اسم الجنسية</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    اسم الجنسية
+                  </label>
                   <input
                     type="text"
                     value={currentEditData.Nationality || ""}
@@ -259,7 +286,9 @@ const Nationalities = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">الفئة</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    الفئة
+                  </label>
                   <select
                     value={currentEditData.CatID || ""}
                     onChange={(e) =>
@@ -280,27 +309,57 @@ const Nationalities = () => {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-6">
+              <div className="flex gap-4 pt-4">
                 <button
-                  className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-                  onClick={() => setEditModalOpen(false)}
+                  onClick={handleEditSave}
+                  className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  إلغاء
+                  حفظ التعديلات
                 </button>
                 <button
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1"
-                  onClick={handleEditSave}
+                  onClick={() => setEditModalOpen(false)}
+                  className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition-colors"
                 >
-                  <Edit2 className="w-4 h-4" />
-                  حفظ التعديلات
+                  إلغاء
                 </button>
               </div>
             </div>
           </div>
         )}
 
+        {/* Delete Confirmation Modal */}
+        {deletingId && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <div className="mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">تأكيد الحذف</h2>
+                <p className="text-gray-600">
+                  هل أنت متأكد من حذف هذه الجنسية؟
+                </p>
+                <p className="text-sm text-red-600 mt-2">
+                  ⚠️ هذا الإجراء لا يمكن التراجع عنه
+                </p>
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  onClick={handleDeleteConfirm}
+                  className="flex-1 bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  نعم، احذف
+                </button>
+                <button
+                  onClick={() => setDeletingId(null)}
+                  className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition-colors"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+    </>
   );
 };
 
