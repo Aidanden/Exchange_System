@@ -23,7 +23,7 @@ export const fetchCurrencies = createAsyncThunk(
   "currencies/fetchCurrencies",
   async () => {
     try {
-      const response = await axios.get("http://localhost:8000/currencies");
+      const response = await axios.get("http://localhost:8002/currencies");
       return response.data;
     } catch (error) {
       throw new Error("Failed to fetch currencies");
@@ -35,7 +35,7 @@ export const addCurrency = createAsyncThunk(
   "currencies/addCurrency",
   async (currencyData: Omit<Currency, "CarID">) => {
     try {
-      const response = await axios.post("http://localhost:8000/currencies", currencyData);
+      const response = await axios.post("http://localhost:8002/currencies", currencyData);
       return response.data;
     } catch (error) {
       throw new Error("Failed to add currency");
@@ -47,7 +47,7 @@ export const updateCurrency = createAsyncThunk(
   "currencies/updateCurrency",
   async (currencyData: Currency) => {
     try {
-      const response = await axios.put(`http://localhost:8000/currencies/${currencyData.CarID}`, currencyData);
+      const response = await axios.put(`http://localhost:8002/currencies/${currencyData.CarID}`, currencyData);
       return response.data;
     } catch (error) {
       throw new Error("Failed to update currency");
@@ -59,7 +59,7 @@ export const deleteCurrency = createAsyncThunk(
   "currencies/deleteCurrency",
   async (CarID: string) => {
     try {
-      await axios.delete(`http://localhost:8000/currencies/${CarID}`);
+      await axios.delete(`http://localhost:8002/currencies/${CarID}`);
       return CarID;
     } catch (error) {
       throw new Error("Failed to delete currency");

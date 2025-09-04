@@ -106,7 +106,7 @@ const cardPopularCustomer = () => {
                       </div>
                     )}
                     <div className="text-xs text-gray-400 mt-1">
-                      {new Date(customer.OperDate).toLocaleDateString('ar-SA')}
+                      {new Date(customer.OperDate).toLocaleDateString('en-US')}
                     </div>
                   </div>
                 </div>

@@ -5,6 +5,7 @@ import CardPopularCustomer from "./cardPopularCustomer";
 import CardSales from "./cardSales";
 import { BarChart3, Users, ShoppingCart, DollarSign, TrendingUp } from "lucide-react";
 import { useGetDashboardMetricsQuery } from "@/state/dashboardApi";
+import { formatPrice } from "@/utils/formatNumber";
 
 const Dashboard = () => {
   const { data, isLoading } = useGetDashboardMetricsQuery();
@@ -68,7 +69,7 @@ const Dashboard = () => {
               <div className="mr-4">
                 <p className="text-sm text-gray-600">مبيعات الشهر</p>
                 <p className="text-2xl font-bold text-gray-800">
-                  {Number(statistics.monthlySalesTotal).toLocaleString()}
+                  {formatPrice(statistics.monthlySalesTotal)}
                 </p>
               </div>
             </div>

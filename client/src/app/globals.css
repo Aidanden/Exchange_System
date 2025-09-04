@@ -36,3 +36,62 @@ body,
     grid-template-rows: repeat(8,7.5vh);
   }
 }
+
+/* Modal Styles */
+.modal-overlay {
+  @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50;
+}
+
+.modal-container {
+  @apply bg-gray-50 rounded-lg shadow-xl w-full mx-4 max-h-[90vh] overflow-y-auto;
+}
+
+.modal-header {
+  @apply flex justify-between items-start p-6 border-b border-gray-200;
+}
+
+.modal-content {
+  @apply bg-gray-50;
+}
+
+.modal-footer {
+  @apply p-6 border-t border-gray-200;
+}
+
+/* Modal Form Elements */
+.modal-input {
+  @apply w-full p-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+}
+
+.modal-select {
+  @apply w-full p-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+}
+
+.modal-button {
+  @apply px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors;
+}
+
+.modal-button-primary {
+  @apply px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors;
+}
+
+/* Modal Table Styles */
+.modal-table-header {
+  @apply bg-gray-100;
+}
+
+.modal-table-header th {
+  @apply px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider;
+}
+
+.modal-table-body {
+  @apply bg-white divide-y divide-gray-200;
+}
+
+.modal-table-row {
+  @apply hover:bg-gray-50;
+}
+
+.modal-table-cell {
+  @apply px-4 py-3 whitespace-nowrap text-sm text-gray-900;
+}

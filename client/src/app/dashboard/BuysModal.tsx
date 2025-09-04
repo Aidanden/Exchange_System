@@ -1,6 +1,30 @@
 import React, { useState } from 'react';
 import { useListBuysQuery } from '@/state/buysApi';
 import { X, Search, Filter, Calendar, Download } from 'lucide-react';
+import { formatNumber, formatPrice } from '@/utils/formatNumber';
+import { Decimal } from "decimal.js";
+
+// Helper function to format numbers with commas
+const formatNumberWithCommas = (value: any): string => {
+  if (!value || value === null || value === undefined) return "0.00";
+  const numericValue = new Decimal(value).toNumber();
+  return numericValue.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 4
+  });
+};
+
+// Format date with Arabic numerals (not Hindi)
+const formatDateArabic = (dateString: string) => {
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  
+  return `${year}/${month}/${day} ${hours}:${minutes}`;
+};
 
 interface BuysModalProps {
   isOpen: boolean;
@@ -144,16 +168,16 @@ const BuysModal: React.FC<BuysModalProps> = ({ isOpen, onClose }) => {
                       {buy.Carrence?.Carrency || 'غير محدد'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {Number(buy.Value).toLocaleString()}
+                      {formatNumberWithCommas(buy.Value)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {Number(buy.BuyPrice).toLocaleString()}
+                      {formatNumberWithCommas(buy.BuyPrice)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                      {Number(buy.TotalPrice).toLocaleString()}
+                      {formatNumberWithCommas(buy.TotalPrice)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(buy.BuyDate).toLocaleDateString('ar-SA')}
+                      {formatDateArabic(buy.BuyDate.toString())}
                     </td>
                   </tr>
                 ))}

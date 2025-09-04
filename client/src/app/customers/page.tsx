@@ -103,6 +103,9 @@ export default function CustomersPage() {
                     رقم وطني
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    رقم جواز السفر
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     الإجراءات
                   </th>
                 </tr>
@@ -124,6 +127,9 @@ export default function CustomersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {c.NationalNumber ?? "-"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {c.passportNumber ?? "-"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex gap-2">
@@ -228,6 +234,7 @@ function CustomerModal() {
   const [form, setForm] = useState<Partial<Customers>>({});
   const [addCustomer, { isLoading: isSaving1 }] = useAddCustomerMutation();
   const [updateCustomer, { isLoading: isSaving2 }] = useUpdateCustomerMutation();
+  const { refetch } = useListCustomersQuery({});
 
   const { data: nationalities, isFetching: isFetchingNationalities } = useGetNationalitiesQuery();
 
@@ -245,7 +252,8 @@ function CustomerModal() {
   if (!openState.open) return null;
 
   const onClose = () => setOpenState({ open: false, mode: "create" });
-  const onSubmit = async () => {
+  const onSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!form.Customer || !form.NatID) {
       toast.error("الاسم والجنسية مطلوبة");
       return;
@@ -259,17 +267,25 @@ function CustomerModal() {
         await updateCustomer({ ...(form as any), CustID: openState.customer.CustID }).unwrap();
         toast.success("تم تعديل الزبون بنجاح!");
       }
+      // إضافة refetch كإضافة أمان لضمان التحديث
+      refetch();
       onClose();
-      window.location.reload(); // Refresh to update the list
     } catch (error) {
       toast.error("حدث خطأ أثناء حفظ البيانات");
       console.error(error);
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      onSubmit();
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onKeyDown={handleKeyDown}>
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">
             {openState.mode === "create" ? "إضافة زبون" : "تعديل زبون"}
@@ -377,6 +393,7 @@ function CustomerModal() {
 
         <div className="flex gap-4 pt-4">
           <button
+            type="button"
             onClick={onSubmit}
             disabled={isSaving1 || isSaving2}
             className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
@@ -384,6 +401,7 @@ function CustomerModal() {
             {isSaving1 || isSaving2 ? "جاري الحفظ..." : "حفظ"}
           </button>
           <button
+            type="button"
             onClick={onClose}
             className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition-colors"
           >

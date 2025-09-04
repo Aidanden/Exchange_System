@@ -2,6 +2,7 @@ import { useGetDashboardMetricsQuery } from '@/state/dashboardApi';
 import React, { useState } from 'react'
 import { TrendingUp, DollarSign, ShoppingCart, Calendar, List } from 'lucide-react';
 import BuysModal from './BuysModal';
+import { formatNumber, formatPrice } from '@/utils/formatNumber';
 
 const cardBuys = () => {
   const { data, isLoading } = useGetDashboardMetricsQuery();
@@ -39,7 +40,7 @@ const cardBuys = () => {
                     <DollarSign className="w-6 h-6 text-blue-600 ml-2" />
                     <div>
                       <p className="text-xs text-gray-600">إجمالي قيمة العملات</p>
-                      <p className="text-lg font-bold text-blue-600">{totalValue.toLocaleString()}</p>
+                      <p className="text-lg font-bold text-blue-600">{formatNumber(totalValue)}</p>
                     </div>
                   </div>
                 </div>
@@ -48,7 +49,7 @@ const cardBuys = () => {
                     <TrendingUp className="w-6 h-6 text-green-600 ml-2" />
                     <div>
                       <p className="text-xs text-gray-600">متوسط قيمة العملة</p>
-                      <p className="text-lg font-bold text-green-600">{averageValue.toLocaleString()}</p>
+                      <p className="text-lg font-bold text-green-600">{formatNumber(averageValue)}</p>
                     </div>
                   </div>
                 </div>
@@ -80,15 +81,15 @@ const cardBuys = () => {
                           تم الشراء من: {buy.Customer?.Customer || 'غير محدد'}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {new Date(buy.BuyDate).toLocaleDateString('ar-SA')}
+                          {new Date(buy.BuyDate).toLocaleDateString('en-US')}
                         </p>
                       </div>
                       <div className="text-left">
                         <p className="font-bold text-blue-600">
-                          {Number(buy.Value).toLocaleString()} {buy.Carrence?.Carrency || ''}
+                          {formatNumber(buy.Value)} {buy.Carrence?.Carrency || ''}
                         </p>
                         <p className="text-xs text-gray-500">
-                          سعر الشراء: {Number(buy.TotalPrice).toLocaleString()} دينار
+                          سعر الشراء: {formatPrice(buy.TotalPrice)} دينار
                         </p>
                       </div>
                     </div>

@@ -91,7 +91,55 @@ export const buysApi = createApi({
 
     deleteBuy: build.mutation<void, string>({
       query: (BuyID) => ({ url: `/api/buys/${BuyID}`, method: "DELETE" }),
-      invalidatesTags: (result, _err, id) => [{ type: "Buys", id }, { type: "Buys", id: "LIST" }],
+      invalidatesTags: (result, _err, id) => [
+        { type: "Buys", id }, 
+        { type: "Buys", id: "LIST" },
+        { type: "Currencies", id: "LIST" } // تحديث قائمة العملات أيضاً
+      ],
+      // تحسين التحديث التلقائي مع optimistic update
+      async onQueryStarted(buyId, { dispatch, queryFulfilled, getState }) {
+        // Optimistic update - إزالة المشتريات من جميع استعلامات القائمة
+        const patchResults = [];
+        
+        // تحديث جميع استعلامات listBuys النشطة
+        const state = getState() as any;
+        const buysQueries = state[buysApi.reducerPath]?.queries;
+        
+        if (buysQueries) {
+          Object.keys(buysQueries).forEach(queryKey => {
+            if (queryKey.startsWith('listBuys')) {
+              const patchResult = dispatch(
+                buysApi.util.updateQueryData('listBuys', buysQueries[queryKey].originalArgs, (draft) => {
+                  if (draft?.data) {
+                    draft.data = draft.data.filter(buy => buy.BuyID !== buyId);
+                    draft.total = Math.max(0, draft.total - 1);
+                  }
+                })
+              );
+              patchResults.push(patchResult);
+            }
+          });
+        }
+        
+        try {
+          await queryFulfilled;
+          // إعادة جلب قائمة المشتريات بعد نجاح الحذف للتأكد من التحديث
+          dispatch(
+            buysApi.util.invalidateTags([
+              { type: "Buys", id: "LIST" },
+            ])
+          );
+          // إعادة جلب قائمة العملات بعد نجاح الحذف
+          dispatch(
+            currenciesApi.util.invalidateTags([
+              { type: "Currencies", id: "LIST" },
+            ])
+          );
+        } catch {
+          // في حالة الخطأ، إعادة البيانات الأصلية
+          patchResults.forEach(patchResult => patchResult.undo());
+        }
+      },
     }),
   }),
 });

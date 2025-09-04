@@ -13,6 +13,8 @@ import {
   UsersRound,
   ShoppingCart,
   TrendingDown,
+  CreditCard,
+  FileText,
 } from "lucide-react"; // تأكد من استيراد الأيقونات المطلوبة
 import { usePathname } from "next/navigation";
 import React from "react";
@@ -144,6 +146,18 @@ const Sidebar = () => {
           href="/sales-list"
           icon={ShoppingCart}
           label="قائمة المبيعات"
+          isCollapsed={isSidebarCollapsed}
+        />
+        <SidebarLink
+          href="/debts"
+          icon={CreditCard}
+          label="إدارة الديون"
+          isCollapsed={isSidebarCollapsed}
+        />
+        <SidebarLink
+          href="/debts-list"
+          icon={FileText}
+          label="قائمة الديون"
           isCollapsed={isSidebarCollapsed}
         />      
         <SidebarLink

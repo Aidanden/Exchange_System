@@ -14,7 +14,7 @@ datasource db {
 }
 
 model Users {
-  UserID            String              @id @default(cuid())
+  UserID            String              @id
   UserName          String
   Email             String
   Customers         Customers[]
@@ -24,8 +24,10 @@ model Users {
   TreasuryMovements TreasuryMovements[]
   Sales             Sales[]
   ExpenseItems      ExpenseItems[]
+  ExpanseAccounts   ExpanseAccounts[]
+  Debts             Debts[]
 
-  ExpanseAccounts ExpanseAccounts[]
+  DebtPayments DebtPayments[]
 }
 
 model Categories {
@@ -51,7 +53,7 @@ model Nationalits {
 }
 
 model Customers {
-  CustID         String          @id @default(cuid())
+  CustID         String          @id
   Customer       String
   NatID          String
   passportNumber String?
@@ -84,11 +86,12 @@ model Carrences {
   Buys              Buys[]
   TreasuryMovements TreasuryMovements[]
   Sales             Sales[]
+  Debts             Debts[]
 }
 
 
 model Buys {
-  BuyID      String    @id @default(cuid())
+  BuyID      String    @id
   BillNum    String
   CarID      String
   Value      Decimal   @db.Decimal(18, 3)
@@ -107,7 +110,7 @@ model Buys {
 }
 
 model TreasuryMovements {
-  TreaMoveID   String    @id @default(cuid())
+  TreaMoveID   String    @id
   CarID        String
   OpenBalance  Decimal   @db.Decimal(18, 3)
   Cridit       Decimal   @db.Decimal(18, 3)
@@ -122,7 +125,7 @@ model TreasuryMovements {
 }
 
 model Sales {
-  SaleID     String    @id @default(cuid())
+  SaleID     String    @id
   BillNum    String
   CustID     String
   CarID      String
@@ -141,7 +144,7 @@ model Sales {
 }
 
 model ExpenseItems {
-  ExpItemID       String            @id @default(cuid())
+  ExpItemID       String            @id
   ExpItem         String
   UserID          String
   Exist           Boolean
@@ -151,7 +154,7 @@ model ExpenseItems {
 }
 
 model ExpanseAccounts {
-  ExpAccId    String       @id @default(cuid())
+  ExpAccId    String       @id
   ExpItemID   String
   ExpValue    Decimal      @db.Decimal(18, 3)
   Statment    String?
@@ -160,4 +163,45 @@ model ExpanseAccounts {
   OperDate    DateTime     @default(now())
   User        Users        @relation(fields: [UserID], references: [UserID])
   ExpenseItem ExpenseItems @relation(fields: [ExpItemID], references: [ExpItemID])
+}
+
+model Debts {
+  DebtID       String    @id @default(cuid())
+  DebtType     String    // "TAKEN" or "GIVEN"
+  DebtorName   String    // Name of person/company
+  DebtorPhone  String?   // Phone number
+  DebtorAddress String?  // Address
+  CarID        String    // Currency ID
+  Amount       Decimal   @db.Decimal(18, 4)
+  PaidAmount   Decimal   @default(0) @db.Decimal(18, 4) // Total amount paid so far
+  RemainingAmount Decimal @db.Decimal(18, 4) // Remaining amount to be paid
+  Description  String?   // Description/notes
+  DebtDate     DateTime  @default(now())
+  Status       String    @default("ACTIVE") // "ACTIVE", "PARTIAL", "PAID", "RECEIVED"
+  UserID       String
+  Exist        Boolean   @default(true)
+  CreatedAt    DateTime  @default(now())
+  UpdatedAt    DateTime  @updatedAt
+  
+  // Relations
+  User         Users     @relation(fields: [UserID], references: [UserID])
+  Currency     Carrences @relation(fields: [CarID], references: [CarID])
+  Payments     DebtPayments[]
+}
+
+model DebtPayments {
+  PaymentID    String    @id @default(cuid())
+  DebtID       String    // Reference to the debt
+  Amount       Decimal   @db.Decimal(18, 4) // Payment amount
+  PaymentDate  DateTime  @default(now())
+  PaymentType  String    // "PAYMENT" or "RECEIPT" (based on debt type)
+  Description  String?   // Payment description/notes
+  UserID       String    // User who recorded the payment
+  Exist        Boolean   @default(true)
+  CreatedAt    DateTime  @default(now())
+  UpdatedAt    DateTime  @updatedAt
+  
+  // Relations
+  Debt         Debts     @relation(fields: [DebtID], references: [DebtID])
+  User         Users     @relation(fields: [UserID], references: [UserID])
 }

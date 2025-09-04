@@ -1,6 +1,7 @@
 import { useGetDashboardMetricsQuery } from '@/state/dashboardApi';
 import React from 'react';
 import { TrendingUp, DollarSign, ShoppingBag, Calendar } from 'lucide-react';
+import { formatPrice } from '@/utils/formatNumber';
 
 const cardSales = () => {
   const { data, isLoading } = useGetDashboardMetricsQuery();
@@ -36,7 +37,7 @@ const cardSales = () => {
                   <DollarSign className="w-5 h-5 text-orange-600 ml-2" />
                   <div>
                     <p className="text-xs text-gray-600">إجمالي المبيعات</p>
-                    <p className="text-lg font-bold text-orange-600">{totalValue.toLocaleString()}</p>
+                    <p className="text-lg font-bold text-orange-600">{formatPrice(totalValue)}</p>
                   </div>
                 </div>
               </div>
@@ -45,7 +46,7 @@ const cardSales = () => {
                   <TrendingUp className="w-5 h-5 text-green-600 ml-2" />
                   <div>
                     <p className="text-xs text-gray-600">متوسط القيمة</p>
-                    <p className="text-lg font-bold text-green-600">{averageValue.toLocaleString()}</p>
+                    <p className="text-lg font-bold text-green-600">{formatPrice(averageValue)}</p>
                   </div>
                 </div>
               </div>
@@ -65,12 +66,12 @@ const cardSales = () => {
                     <div>
                       <p className="font-medium text-gray-800 text-sm">فاتورة: {sale.BillNum}</p>
                       <p className="text-xs text-gray-500">
-                        {new Date(sale.BillDate).toLocaleDateString('ar-SA')}
+                        {new Date(sale.BillDate).toLocaleDateString('en-US')}
                       </p>
                     </div>
                     <div className="text-left">
                       <p className="font-bold text-orange-600 text-sm">
-                        {Number(sale.TotalPrice).toLocaleString()} دينار
+                        {formatPrice(sale.TotalPrice)} دينار
                       </p>
                     </div>
                   </div>

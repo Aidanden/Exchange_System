@@ -144,12 +144,12 @@ const Nationalities = () => {
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="اسم الجنسية"
-              className="flex-1 min-w-64 rounded-lg border border-gray-300 bg-white py-3 px-4 text-base text-black outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              className="flex-1 min-w-0 p-3 border border-gray-300 rounded-lg bg-white text-sm text-black outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             />
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-64 rounded-lg border border-gray-300 bg-white py-3 px-4 text-base text-black outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              className="w-full md:w-64 p-3 rounded-lg border border-gray-300 bg-white text-sm text-black outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             >
               <option value="">اختر الفئة</option>
               {categories?.map((category) => (

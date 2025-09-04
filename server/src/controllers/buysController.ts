@@ -93,7 +93,7 @@ export const createBuy = async (req: Request, res: Response): Promise<void> => {
           Cridit: new Decimal(0),
           Debit: buyDebit,
           FinalBalance: buyFinalBalance,
-          Statment: `شراء ${Value} ${buyCurrency.Carrency} - فاتورة رقم ${generatedBillNum}`,
+          Statment: `شراء ${Value} ${buyCurrency.Carrency} - فاتورة رقم ${generatedBillNum} |BUY:${buy.BuyID}`,
           UserID,
           Exist: true,
         },
@@ -124,7 +124,7 @@ export const createBuy = async (req: Request, res: Response): Promise<void> => {
           Cridit: paymentCredit,
           Debit: new Decimal(0),
           FinalBalance: paymentFinalBalance,
-          Statment: `دفع مقابل شراء ${Value} ${buyCurrency.Carrency} - فاتورة رقم ${generatedBillNum}`,
+          Statment: `دفع مقابل شراء ${Value} ${buyCurrency.Carrency} - فاتورة رقم ${generatedBillNum} |BUY:${buy.BuyID}`,
           UserID,
           Exist: true,
         },
@@ -342,13 +342,71 @@ export const updateBuy = async (req: Request, res: Response): Promise<void> => {
 export const deleteBuy = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    await prisma.buys.update({
-      where: { BuyID: id },
-      data: { Exist: false },
+
+    // التحقق من وجود عملية الشراء
+    const existingBuy = await prisma.buys.findUnique({
+      where: { 
+        BuyID: id,
+        Exist: true, // التأكد من أن عملية الشراء غير محذوفة مسبقاً
+      },
     });
-    res.status(204).end();
+
+    if (!existingBuy) {
+      res.status(404).json({ error: "عملية الشراء غير موجودة أو تم حذفها مسبقاً" });
+      return;
+    }
+
+    // تنفيذ عملية عكس المعاملة: وضع علامة حذف على الشراء، عكس حركات الخزينة المرتبطة
+    // وإرجاع أرصدة العملات المتأثرة بتلك الحركات
+    await prisma.$transaction(async (tx) => {
+      // وضع علامة حذف على عملية الشراء (soft delete)
+      await tx.buys.update({ where: { BuyID: id }, data: { Exist: false } });
+
+      const billNum = existingBuy.BillNum;
+
+      // البحث عن الحركات بوسم صريح BUY:<BuyID> الذي نضيفه عند الإنشاء
+      const buyTag = `BUY:${existingBuy.BuyID}`;
+      let relatedMovs = await tx.treasuryMovements.findMany({ 
+        where: { Statment: { contains: buyTag } } 
+      });
+
+      // احتياطي: إذا لم توجد، البحث برقم الفاتورة للسجلات القديمة
+      if (!relatedMovs || relatedMovs.length === 0) {
+        relatedMovs = await tx.treasuryMovements.findMany({ 
+          where: { Statment: { contains: billNum } } 
+        });
+      }
+
+      // عكس تأثير كل حركة على رصيد العملة
+      for (const mov of relatedMovs) {
+        const car = await tx.carrences.findUnique({ where: { CarID: mov.CarID } });
+        if (!car) continue;
+
+        const currBal = new Decimal((car.Balance as any) ?? 0);
+        const credit = new Decimal((mov.Cridit as any) ?? 0);
+        const debit = new Decimal((mov.Debit as any) ?? 0);
+
+        // عكس العملية: الرصيد الجديد = الحالي + دائن - مدين
+        const restored = currBal.plus(credit).minus(debit);
+
+        await tx.carrences.update({ 
+          where: { CarID: mov.CarID }, 
+          data: { Balance: restored } 
+        });
+      }
+
+      // حذف حركات الخزينة المرتبطة بعملية الشراء هذه (بالوسم أو رقم الفاتورة)
+      await tx.treasuryMovements.deleteMany({ 
+        where: { Statment: { contains: buyTag } } 
+      });
+      await tx.treasuryMovements.deleteMany({ 
+        where: { Statment: { contains: billNum } } 
+      });
+    });
+
+    res.status(204).send();
   } catch (error) {
-    console.error("deleteBuy error", error);
-    res.status(500).json({ error: "خطأ في الخادم" });
+    console.error("Error deleting buy:", error);
+    res.status(500).json({ error: "حدث خطأ أثناء حذف عملية الشراء" });
   }
 };

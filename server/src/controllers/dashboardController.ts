@@ -20,6 +20,9 @@ export const getDashboardMetrics = async (
       },
     });
     const lastSales = await prisma.sales.findMany({
+      where: {
+        Exist: true, // عرض المبيعات الموجودة فقط (غير المحذوفة)
+      },
       take: 2,
       orderBy: {
         SaleDate: "desc",

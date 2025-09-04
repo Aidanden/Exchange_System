@@ -11,9 +11,13 @@ import { Currency } from "../../state/types";
 import { Coins, Search, Plus, Edit, Trash2 } from "lucide-react";
 import { useAddCurrencyBalanceMutation } from "../../state/currenciesApi";
 import { toast, Toaster } from "react-hot-toast";
+import Modal from "../../components/Modal";
 
 const CurrencyList = () => {
-  const { data: currencies, isLoading, error, refetch } = useGetCurrenciesQuery();
+  const { data: currencies, isLoading, error, refetch } = useGetCurrenciesQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+    pollingInterval: 30000, // إعادة تحميل كل 30 ثانية
+  });
   const [addCurrency, { isLoading: isAdding, error: addError }] = useAddCurrencyMutation();
   const [updateCurrency] = useUpdateCurrencyMutation();
   const [deleteCurrency] = useDeleteCurrencyMutation();
@@ -29,6 +33,41 @@ const CurrencyList = () => {
   const [isBalanceModalOpen, setBalanceModalOpen] = useState(false);
   const [balanceCarID, setBalanceCarID] = useState<string | null>(null);
   const [balanceAmount, setBalanceAmount] = useState<string>("");
+  const [displayBalanceAmount, setDisplayBalanceAmount] = useState<string>("");
+
+  // دالة لتنسيق الأرقام مع الفواصل
+  const formatNumberWithCommas = (value: string): string => {
+    // إزالة جميع الفواصل الموجودة
+    const cleanValue = value.replace(/,/g, '');
+    
+    // التحقق من أن القيمة رقم صالح
+    if (!/^\d*\.?\d*$/.test(cleanValue)) {
+      return value;
+    }
+    
+    // تقسيم الرقم إلى جزء صحيح وجزء عشري
+    const parts = cleanValue.split('.');
+    const integerPart = parts[0];
+    const decimalPart = parts[1];
+    
+    // إضافة الفواصل للجزء الصحيح
+    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    
+    // إعادة تجميع الرقم
+    return decimalPart !== undefined ? `${formattedInteger}.${decimalPart}` : formattedInteger;
+  };
+
+  // دالة لإزالة الفواصل والحصول على القيمة الرقمية
+  const getNumericValue = (formattedValue: string): string => {
+    return formattedValue.replace(/,/g, '');
+  };
+
+  // التعامل مع تغيير قيمة الرصيد
+  const handleBalanceAmountChange = (value: string) => {
+    const formattedValue = formatNumberWithCommas(value);
+    setDisplayBalanceAmount(formattedValue);
+    setBalanceAmount(getNumericValue(formattedValue));
+  };
 
   const getNumericBalance = (balance: any): number => {
     if (balance == null) return 0;
@@ -116,9 +155,12 @@ const CurrencyList = () => {
   };
 
   const openBalanceModal = (carID: string) => {
+    console.log("Opening balance modal for carID:", carID);
     setBalanceCarID(carID);
     setBalanceAmount("");
+    setDisplayBalanceAmount("");
     setBalanceModalOpen(true);
+    console.log("Balance modal state set to true");
   };
 
   const submitAddBalance = async () => {
@@ -180,15 +222,15 @@ const CurrencyList = () => {
               type="text"
               value={newCurrencyName}
               onChange={(e) => setNewCurrencyName(e.target.value)}
-              placeholder="اسم العملة (مثل: الدولار الأمريكي)"
-              className="flex-1 min-w-64 rounded-lg border border-gray-300 bg-white py-3 px-4 text-base text-black outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              placeholder="اسم العملة (مثل: الدولار الامركي)"
+              className="flex-1 min-w-0 p-3 border border-gray-300 rounded-lg bg-white text-sm text-black outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             />
             <input
               type="text"
               value={newCurrencyCode}
               onChange={(e) => setNewCurrencyCode(e.target.value)}
               placeholder="رمز العملة (مثل: USD)"
-              className="w-48 rounded-lg border border-gray-300 bg-white py-3 px-4 text-base text-black outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              className="w-full md:w-48 p-3 rounded-lg border border-gray-300 bg-white text-sm text-black outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             />
             <button
               className="px-6 py-3 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 disabled:bg-blue-300 transition-colors flex items-center gap-2"
@@ -256,7 +298,10 @@ const CurrencyList = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {getNumericBalance(currency.Balance).toFixed(4)}
+                      {getNumericBalance(currency.Balance).toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 4
+                      })}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex gap-2">
@@ -294,157 +339,152 @@ const CurrencyList = () => {
           )}
         </div>
 
-        {/* Edit Modal */}
-        {isEditModalOpen && currentEditData && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">تعديل العملة</h2>
-                <button
-                  onClick={() => setEditModalOpen(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    اسم العملة
-                  </label>
-                  <input
-                    type="text"
-                    value={currentEditData.Carrency || ""}
-                    onChange={(e) =>
-                      setCurrentEditData({
-                        ...currentEditData,
-                        Carrency: e.target.value,
-                      })
-                    }
-                    placeholder="اسم العملة"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    رمز العملة
-                  </label>
-                  <input
-                    type="text"
-                    value={currentEditData.CarrencyCode || ""}
-                    onChange={(e) =>
-                      setCurrentEditData({
-                        ...currentEditData,
-                        CarrencyCode: e.target.value,
-                      })
-                    }
-                    placeholder="رمز العملة"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-4 pt-4">
-                <button
-                  onClick={handleEditSave}
-                  className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  حفظ التعديلات
-                </button>
-                <button
-                  onClick={() => setEditModalOpen(false)}
-                  className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition-colors"
-                >
-                  إلغاء
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+                 {/* Edit Modal */}
+         <Modal
+           isOpen={isEditModalOpen}
+           onClose={() => setEditModalOpen(false)}
+           title="تعديل العملة"
+           subtitle="تعديل بيانات العملة المحددة"
+           size="md"
+         >
+           <div className="p-6">
+             <div className="space-y-4">
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                   اسم العملة
+                 </label>
+                 <input
+                   type="text"
+                   value={currentEditData?.Carrency || ""}
+                   onChange={(e) =>
+                     setCurrentEditData({
+                       ...currentEditData!,
+                       Carrency: e.target.value,
+                     })
+                   }
+                   placeholder="اسم العملة"
+                   className="modal-input"
+                 />
+               </div>
+               
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                   رمز العملة
+                 </label>
+                 <input
+                   type="text"
+                   value={currentEditData?.CarrencyCode || ""}
+                   onChange={(e) =>
+                     setCurrentEditData({
+                       ...currentEditData!,
+                       CarrencyCode: e.target.value,
+                     })
+                   }
+                   placeholder="رمز العملة"
+                   className="modal-input"
+                 />
+               </div>
+             </div>
+             
+             <div className="flex justify-end gap-3 mt-6">
+               <button
+                 className="modal-button"
+                 onClick={() => setEditModalOpen(false)}
+               >
+                 إلغاء
+               </button>
+               <button
+                 className="modal-button-primary flex items-center gap-1"
+                 onClick={handleEditSave}
+               >
+                 <Edit className="w-4 h-4" />
+                 حفظ التعديلات
+               </button>
+             </div>
+           </div>
+         </Modal>
 
         {/* Delete Confirmation Modal */}
-        {deletingId && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <div className="mb-4">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">تأكيد الحذف</h2>
-                <p className="text-gray-600">
-                  هل أنت متأكد من حذف هذه العملة؟
-                </p>
-                <p className="text-sm text-red-600 mt-2">
-                  ⚠️ هذا الإجراء لا يمكن التراجع عنه
-                </p>
-              </div>
+        <Modal
+          isOpen={!!deletingId}
+          onClose={() => setDeletingId(null)}
+          title="تأكيد الحذف"
+          subtitle="هل أنت متأكد من حذف هذه العملة؟"
+          size="sm"
+        >
+          <div className="p-6">
+            <div className="mb-4">
+              <p className="text-gray-600">
+                هذا الإجراء لا يمكن التراجع عنه.
+              </p>
+              <p className="text-sm text-red-600 mt-2">
+                ⚠️ سيتم حذف جميع البيانات المتعلقة بهذه العملة
+              </p>
+            </div>
 
-              <div className="flex gap-4">
-                <button
-                  onClick={handleDeleteConfirm}
-                  className="flex-1 bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  نعم، احذف
-                </button>
-                <button
-                  onClick={() => setDeletingId(null)}
-                  className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition-colors"
-                >
-                  إلغاء
-                </button>
-              </div>
+            <div className="flex justify-end gap-3">
+              <button
+                className="modal-button"
+                onClick={() => setDeletingId(null)}
+              >
+                إلغاء
+              </button>
+              <button
+                className="modal-button px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                onClick={handleDeleteConfirm}
+              >
+                نعم، احذف
+              </button>
             </div>
           </div>
-        )}
+        </Modal>
 
-        {/* Balance Modal */}
-        {isBalanceModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">إضافة رصيد</h2>
-                <button
-                  onClick={() => setBalanceModalOpen(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    المبلغ
-                  </label>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    min="0"
-                    step="0.0001"
-                    value={balanceAmount}
-                    onChange={(e) => setBalanceAmount(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                    placeholder="0.0000"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-4 pt-4">
-                <button
-                  onClick={submitAddBalance}
-                  className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  إضافة الرصيد
-                </button>
-                <button
-                  onClick={() => setBalanceModalOpen(false)}
-                  className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition-colors"
-                >
-                  إلغاء
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+                           {/* Balance Modal */}
+          <Modal
+           isOpen={isBalanceModalOpen}
+           onClose={() => setBalanceModalOpen(false)}
+           title="إضافة رصيد"
+           subtitle="إضافة رصيد جديد للعملة المحددة"
+           size="sm"
+         >
+           <div className="p-6">
+             <div className="space-y-4">
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                   المبلغ
+                 </label>
+                 <input
+                   type="text"
+                   inputMode="decimal"
+                   value={displayBalanceAmount}
+                   onChange={(e) => handleBalanceAmountChange(e.target.value)}
+                   className="modal-input text-left"
+                   placeholder="0"
+                   dir="ltr"
+                   style={{ textAlign: 'left' }}
+                 />
+                 <p className="text-xs text-gray-500 mt-1">
+                   مثال: 1,000,000.50
+                 </p>
+               </div>
+             </div>
+             
+             <div className="flex justify-end gap-3 mt-6">
+               <button
+                 className="modal-button"
+                 onClick={() => setBalanceModalOpen(false)}
+               >
+                 إلغاء
+               </button>
+               <button
+                 className="modal-button-primary"
+                 onClick={submitAddBalance}
+               >
+                 إضافة الرصيد
+               </button>
+             </div>
+           </div>
+         </Modal>
       </div>
     </>
   );

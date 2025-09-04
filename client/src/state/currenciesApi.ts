@@ -2,7 +2,13 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { Currency } from "./types";
 
 export const currenciesApi = createApi({
-  baseQuery: fetchBaseQuery({ baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL }),
+  baseQuery: fetchBaseQuery({ 
+    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8002",
+    prepareHeaders: (headers, { getState }) => {
+      console.log("API Base URL:", process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8002");
+      return headers;
+    },
+  }),
   reducerPath: "currenciesApi",
   tagTypes: ["Currencies", "Currency"],
   endpoints: (build) => ({
@@ -43,10 +49,15 @@ export const currenciesApi = createApi({
       ],
     }),
     deleteCurrency: build.mutation<void, string>({
-      query: (carID) => ({
-        url: `/api/currencies/delete-currency/${carID}`,
-        method: "DELETE",
-      }),
+      query: (carID) => {
+        console.log("Delete currency API call - carID:", carID);
+        const url = `/api/currencies/delete-currency/${carID}`;
+        console.log("Delete currency URL:", url);
+        return {
+          url,
+          method: "DELETE",
+        };
+      },
       invalidatesTags: [{ type: "Currencies", id: "LIST" }],
     }),
     addCurrencyBalance: build.mutation<

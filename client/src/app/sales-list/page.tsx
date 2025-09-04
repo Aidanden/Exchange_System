@@ -1,38 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
-import { useListSalesQuery, useDeleteSaleMutation, useUpdateSaleMutation } from "@/state/salesApi";
-import { useGetCurrenciesQuery } from "@/state/currenciesApi";
-import { useListCustomersQuery } from "@/state/customersApi";
-import { Decimal } from "decimal.js";
+import React, { useState, useEffect } from "react";
+import { useListSalesQuery, useDeleteSaleMutation } from "@/state/salesApi";
 import { toast, Toaster } from "react-hot-toast";
-
-interface SaleFormData {
-  CarID: string;
-  Value: string;
-  SalePrice: string;
-  TotalPrice: string;
-  CustID: string;
-  FirstNum: string;
-  LastNum: string;
-  PaymentCurrencyID: string;
-}
+import { formatNumber } from "@/utils/formatNumber";
 
 export default function SalesListPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const [editingSale, setEditingSale] = useState<any>(null);
   const [deletingSale, setDeletingSale] = useState<any>(null);
-  const [editForm, setEditForm] = useState<SaleFormData>({
-    CarID: "",
-    Value: "",
-    SalePrice: "",
-    TotalPrice: "",
-    CustID: "",
-    FirstNum: "",
-    LastNum: "",
-    PaymentCurrencyID: "",
-  });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // API hooks
   const { 
@@ -46,72 +23,24 @@ export default function SalesListPage() {
     search: searchTerm,
   });
 
-  const { data: currencies } = useGetCurrenciesQuery();
-  const { data: customersData } = useListCustomersQuery({
-    customerType: true,
-    limit: 1000,
-  });
+  // إعادة تعيين الصفحة إلى 1 عند تغيير البحث
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // إعادة تحميل البيانات عند تغيير الصفحة
+  useEffect(() => {
+    refetch();
+  }, [currentPage, refetch]);
+
+  // إعادة تحميل البيانات عند تغيير البحث
+  useEffect(() => {
+    refetch();
+  }, [searchTerm, refetch]);
 
   const [deleteSale] = useDeleteSaleMutation();
-  const [updateSale] = useUpdateSaleMutation();
 
-  // Calculate total price when value or sale price changes
-  React.useEffect(() => {
-    if (editForm.Value && editForm.SalePrice) {
-      try {
-        const value = new Decimal(editForm.Value);
-        const price = new Decimal(editForm.SalePrice);
-        const total = value.mul(price);
-        setEditForm(prev => ({ ...prev, TotalPrice: total.toString() }));
-      } catch (error) {
-        console.error("Error calculating total:", error);
-      }
-    }
-  }, [editForm.Value, editForm.SalePrice]);
-
-  // Handle edit button click
-  const handleEditClick = (sale: any) => {
-    setEditingSale(sale);
-    setEditForm({
-      CarID: sale.CarID,
-      Value: sale.Value.toString(),
-      SalePrice: sale.SalePrice.toString(),
-      TotalPrice: sale.TotalPrice.toString(),
-      CustID: sale.CustID,
-      FirstNum: sale.FirstNum || "",
-      LastNum: sale.LastNum || "",
-      PaymentCurrencyID: sale.CarID, // Default to same currency
-    });
-  };
-
-  // Handle edit form submission
-  const handleEditSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!editingSale) return;
-
-    try {
-      await updateSale({
-        id: editingSale.SaleID,
-        data: {
-          CarID: editForm.CarID,
-          Value: new Decimal(editForm.Value),
-          SalePrice: new Decimal(editForm.SalePrice),
-          TotalPrice: new Decimal(editForm.TotalPrice),
-          CustID: editForm.CustID,
-          FirstNum: editForm.FirstNum || null,
-          LastNum: editForm.LastNum || null,
-        },
-      }).unwrap();
-      
-      toast.success("تم تعديل عملية البيع بنجاح");
-      setEditingSale(null);
-      refetch();
-    } catch (error) {
-      toast.error("حدث خطأ أثناء تعديل عملية البيع");
-      console.error(error);
-    }
-  };
+  // editing removed per request; only delete remains
 
   // Handle delete confirmation
   const handleDeleteClick = (sale: any) => {
@@ -123,19 +52,30 @@ export default function SalesListPage() {
     if (!deletingSale) return;
 
     try {
-      await deleteSale(deletingSale.SaleID).unwrap();
+      setIsDeleting(true);
+      const saleId = deletingSale?.SaleID || deletingSale?.id || deletingSale;
+      if (!saleId) throw new Error("Sale id not found");
+      
+      await deleteSale(saleId).unwrap();
       toast.success("تم حذف عملية البيع بنجاح");
       setDeletingSale(null);
+      
+      // التحديث التلقائي للجدول - RTK Query سيقوم بالتحديث تلقائياً
+      // لكن يمكننا إضافة refetch للتأكد من التحديث الفوري
       refetch();
     } catch (error) {
-      toast.error("حدث خطأ أثناء حذف عملية البيع");
+      const msg = (error as any)?.data?.message || (error as any)?.message || "حدث خطأ أثناء حذف عملية البيع";
+      toast.error(msg);
       console.error(error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
-  // Format date
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ar-EG', {
+  // Format date with Arabic numerals
+  const formatDate = (date: string | Date) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    return dateObj.toLocaleDateString('en-US', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -144,11 +84,7 @@ export default function SalesListPage() {
     });
   };
 
-  // Format number
-  const formatNumber = (num: any) => {
-    if (!num) return "0";
-    return new Decimal(num).toFixed(4);
-  };
+  // استخدام دالة التنسيق المشتركة من utils
 
   if (isLoading) {
     return (
@@ -257,16 +193,13 @@ export default function SalesListPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex gap-2">
                         <button
-                          onClick={() => handleEditClick(sale)}
-                          className="text-blue-600 hover:text-blue-900 px-3 py-1 rounded bg-blue-50 hover:bg-blue-100 transition-colors"
-                        >
-                          تعديل
-                        </button>
-                        <button
                           onClick={() => handleDeleteClick(sale)}
-                          className="text-red-600 hover:text-red-900 px-3 py-1 rounded bg-red-50 hover:bg-red-100 transition-colors"
+                          disabled={isDeleting}
+                          className={`text-red-600 hover:text-red-900 px-3 py-1 rounded bg-red-50 hover:bg-red-100 transition-colors ${
+                            isDeleting ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
                         >
-                          حذف
+                          {isDeleting ? 'جاري الحذف...' : 'حذف'}
                         </button>
                       </div>
                     </td>
@@ -311,144 +244,7 @@ export default function SalesListPage() {
           )}
         </div>
 
-        {/* Edit Modal */}
-        {editingSale && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">تعديل عملية البيع</h2>
-                <button
-                  onClick={() => setEditingSale(null)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <form onSubmit={handleEditSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      العملة
-                    </label>
-                    <select
-                      value={editForm.CarID}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, CarID: e.target.value }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="">اختر العملة</option>
-                      {currencies?.map((currency) => (
-                        <option key={currency.CarID} value={currency.CarID}>
-                          {currency.Carrency} ({currency.CarrencyCode})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      العميل
-                    </label>
-                    <select
-                      value={editForm.CustID}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, CustID: e.target.value }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="">اختر العميل</option>
-                      {customersData?.data?.map((customer) => (
-                        <option key={customer.CustID} value={customer.CustID}>
-                          {customer.Customer}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      الكمية
-                    </label>
-                    <input
-                      type="number"
-                      step="0.0001"
-                      value={editForm.Value}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, Value: e.target.value }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      سعر البيع
-                    </label>
-                    <input
-                      type="number"
-                      step="0.0001"
-                      value={editForm.SalePrice}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, SalePrice: e.target.value }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      السعر الإجمالي
-                    </label>
-                    <input
-                      type="text"
-                      value={editForm.TotalPrice}
-                      className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50"
-                      readOnly
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      أول رقم
-                    </label>
-                    <input
-                      type="text"
-                      value={editForm.FirstNum}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, FirstNum: e.target.value }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      آخر رقم
-                    </label>
-                    <input
-                      type="text"
-                      value={editForm.LastNum}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, LastNum: e.target.value }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-4 pt-4">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    حفظ التعديلات
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditingSale(null)}
-                    className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition-colors"
-                  >
-                    إلغاء
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+  {/* Editing disabled per request - removed UI */}
 
         {/* Delete Confirmation Modal */}
         {deletingSale && (
@@ -467,13 +263,19 @@ export default function SalesListPage() {
               <div className="flex gap-4">
                 <button
                   onClick={handleDeleteConfirm}
-                  className="flex-1 bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 transition-colors"
+                  disabled={isDeleting}
+                  className={`flex-1 bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 transition-colors ${
+                    isDeleting ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
-                  نعم، احذف
+                  {isDeleting ? 'جاري الحذف...' : 'نعم، احذف'}
                 </button>
                 <button
                   onClick={() => setDeletingSale(null)}
-                  className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition-colors"
+                  disabled={isDeleting}
+                  className={`flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition-colors ${
+                    isDeleting ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
                   إلغاء
                 </button>

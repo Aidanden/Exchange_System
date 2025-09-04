@@ -18,6 +18,9 @@ export const listSales = async (req: Request, res: Response): Promise<void> => {
     // بناء شروط البحث
     const where: any = {};
     
+    // افتراضياً، عرض المبيعات الموجودة فقط (غير المحذوفة)
+    where.Exist = true;
+    
     if (search) {
       where.OR = [
         { BillNum: { contains: search } },
@@ -29,6 +32,7 @@ export const listSales = async (req: Request, res: Response): Promise<void> => {
       where.CustID = custId;
     }
 
+    // إذا تم تحديد exist بشكل صريح، استخدم القيمة المحددة
     if (exist !== undefined) {
       where.Exist = exist === "true";
     }
@@ -78,7 +82,10 @@ export const getSale = async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
 
     const sale = await prisma.sales.findUnique({
-      where: { SaleID: id },
+      where: { 
+        SaleID: id,
+        Exist: true, // التأكد من أن عملية البيع غير محذوفة
+      },
       include: {
         Customer: {
           include: {
@@ -95,7 +102,7 @@ export const getSale = async (req: Request, res: Response): Promise<void> => {
     });
 
     if (!sale) {
-      res.status(404).json({ error: "عملية البيع غير موجودة" });
+      res.status(404).json({ error: "عملية البيع غير موجودة أو تم حذفها" });
       return;
     }
 
@@ -157,13 +164,16 @@ export const createSale = async (req: Request, res: Response): Promise<void> => 
 
     if (currentBalance.lessThan(valueToSell)) {
       res.status(400).json({ 
-        error: `رصيد العملة غير كافي. الرصيد الحالي: ${currentBalance.toString()}, المطلوب: ${valueToSell.toString()}` 
+        error: `رصيد العملة غير كافي. الرصيد الحالي: ${currentBalance.toFixed(3)}, المطلوب: ${valueToSell.toFixed(3)}` 
       });
       return;
     }
 
     // إنشاء رقم الفاتورة
     const lastSale = await prisma.sales.findFirst({
+      where: {
+        Exist: true, // اعتبار المبيعات الموجودة فقط لتجنب فجوات في الترقيم
+      },
       orderBy: { BillNum: "desc" },
     });
 
@@ -233,7 +243,7 @@ export const createSale = async (req: Request, res: Response): Promise<void> => 
         Cridit: valueToSell,
         Debit: new Decimal(0),
         FinalBalance: currentBalance.minus(valueToSell),
-        Statment: `بيع ${Value} ${currencyToSell.Carrency} - فاتورة ${billNum}`,
+  Statment: `بيع ${Value} ${currencyToSell.Carrency} - فاتورة ${billNum} |SALE:${sale.SaleID}`,
         UserID,
         Exist: true,
         OperDate: new Date(),
@@ -249,7 +259,7 @@ export const createSale = async (req: Request, res: Response): Promise<void> => 
         Cridit: new Decimal(0),
         Debit: totalPayment,
         FinalBalance: paymentBalance.plus(totalPayment),
-        Statment: `استلام ${totalPayment.toString()} ${paymentCurrency.Carrency} - فاتورة ${billNum}`,
+  Statment: `استلام ${totalPayment.toString()} ${paymentCurrency.Carrency} - فاتورة ${billNum} |SALE:${sale.SaleID}`,
         UserID,
         Exist: true,
         OperDate: new Date(),
@@ -271,11 +281,14 @@ export const updateSale = async (req: Request, res: Response): Promise<void> => 
 
     // التحقق من وجود عملية البيع
     const existingSale = await prisma.sales.findUnique({
-      where: { SaleID: id },
+      where: { 
+        SaleID: id,
+        Exist: true, // التأكد من أن عملية البيع غير محذوفة
+      },
     });
 
     if (!existingSale) {
-      res.status(404).json({ error: "عملية البيع غير موجودة" });
+      res.status(404).json({ error: "عملية البيع غير موجودة أو تم حذفها" });
       return;
     }
 
@@ -317,18 +330,52 @@ export const deleteSale = async (req: Request, res: Response): Promise<void> => 
 
     // التحقق من وجود عملية البيع
     const existingSale = await prisma.sales.findUnique({
-      where: { SaleID: id },
+      where: { 
+        SaleID: id,
+        Exist: true, // التأكد من أن عملية البيع غير محذوفة مسبقاً
+      },
     });
 
     if (!existingSale) {
-      res.status(404).json({ error: "عملية البيع غير موجودة" });
+      res.status(404).json({ error: "عملية البيع غير موجودة أو تم حذفها مسبقاً" });
       return;
     }
 
-    // حذف عملية البيع (soft delete)
-    await prisma.sales.update({
-      where: { SaleID: id },
-      data: { Exist: false },
+    // perform transactional rollback: mark sale as deleted, reverse related treasury movements
+    // and restore currency balances affected by those treasury movements
+    await prisma.$transaction(async (tx) => {
+      // mark sale as not existing (soft delete)
+      await tx.sales.update({ where: { SaleID: id }, data: { Exist: false } });
+
+      const billNum = existingSale.BillNum;
+
+      // Prefer to find movements by explicit SALE:<SaleID> tag we now add at creation time
+      const saleTag = `SALE:${existingSale.SaleID}`;
+      let relatedMovs = await tx.treasuryMovements.findMany({ where: { Statment: { contains: saleTag } } });
+
+      // fallback: if none found, search by billNum for older records
+      if (!relatedMovs || relatedMovs.length === 0) {
+        relatedMovs = await tx.treasuryMovements.findMany({ where: { Statment: { contains: billNum } } });
+      }
+
+      // reverse each movement's effect on its currency balance
+      for (const mov of relatedMovs) {
+        const car = await tx.carrences.findUnique({ where: { CarID: mov.CarID } });
+        if (!car) continue;
+
+        const currBal = new Decimal((car.Balance as any) ?? 0);
+        const credit = new Decimal((mov.Cridit as any) ?? 0);
+        const debit = new Decimal((mov.Debit as any) ?? 0);
+
+        // reverse: newBalance = current + credit - debit
+        const restored = currBal.plus(credit).minus(debit);
+
+        await tx.carrences.update({ where: { CarID: mov.CarID }, data: { Balance: restored } });
+      }
+
+      // delete treasury movements related to this sale (by saleTag or billNum)
+      await tx.treasuryMovements.deleteMany({ where: { Statment: { contains: saleTag } } });
+      await tx.treasuryMovements.deleteMany({ where: { Statment: { contains: billNum } } });
     });
 
     res.status(204).send();

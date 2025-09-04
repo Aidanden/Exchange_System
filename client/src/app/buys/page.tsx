@@ -8,6 +8,22 @@ import { useAddCustomerMutation } from "@/state/customersApi";
 import { useGetNationalitiesQuery } from "@/state/nationalitsApi";
 import { Decimal } from "decimal.js";
 import { toast, Toaster } from "react-hot-toast";
+import { formatBalance } from "@/utils/formatNumber";
+
+// Helper functions for number formatting
+const formatNumberWithCommas = (value: string): string => {
+  if (!value) return "";
+  const number = parseFloat(value.replace(/,/g, ""));
+  if (isNaN(number)) return value;
+  return number.toLocaleString('en-US', { 
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 4 
+  });
+};
+
+const getNumericValue = (value: string): string => {
+  return value.replace(/,/g, "");
+};
 
 interface BuyFormData {
   CarID: string;
@@ -37,6 +53,10 @@ export default function BuysPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [showAddCustomer, setShowAddCustomer] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Display states for formatted inputs
+  const [displayValue, setDisplayValue] = useState("");
+  const [displayTotalPrice, setDisplayTotalPrice] = useState("");
   
   // Form states
   const [buyForm, setBuyForm] = useState<BuyFormData>({
@@ -72,6 +92,18 @@ export default function BuysPage() {
   const [createBuy] = useCreateBuyMutation();
   const [addCustomer] = useAddCustomerMutation();
 
+  // إعادة تحميل أرصدة العملات عند تغيير مصدر الشراء
+  useEffect(() => {
+    refetchCurrencies();
+  }, [buySource, refetchCurrencies]);
+
+  // مسح البحث والعميل المختار عند تغيير مصدر الشراء
+  useEffect(() => {
+    setSearchTerm("");
+    setSelectedCustomer(null);
+    setBuyForm(prev => ({ ...prev, CustID: "" }));
+  }, [buySource]);
+
   // Filter customers based on search
   const filteredCustomers = customersData?.data?.filter(customer =>
     customer.Customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -86,12 +118,26 @@ export default function BuysPage() {
         const value = new Decimal(buyForm.Value);
         const price = new Decimal(buyForm.BuyPrice);
         const total = value.mul(price);
-        setBuyForm(prev => ({ ...prev, TotalPrice: total.toString() }));
+        const totalString = total.toString();
+        setBuyForm(prev => ({ ...prev, TotalPrice: totalString }));
+        setDisplayTotalPrice(formatNumberWithCommas(totalString));
       } catch (error) {
         console.error("Error calculating total:", error);
       }
+    } else {
+      setBuyForm(prev => ({ ...prev, TotalPrice: "" }));
+      setDisplayTotalPrice("");
     }
   }, [buyForm.Value, buyForm.BuyPrice]);
+
+  // Handle value change with formatting
+  const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    const numericValue = getNumericValue(inputValue);
+    
+    setBuyForm(prev => ({ ...prev, Value: numericValue }));
+    setDisplayValue(formatNumberWithCommas(numericValue));
+  };
 
   // Handle customer selection
   const handleCustomerSelect = (customer: any) => {
@@ -134,6 +180,8 @@ export default function BuysPage() {
         LastNum: "",
         PaymentCurrencyID: "",
       });
+      setDisplayValue("");
+      setDisplayTotalPrice("");
       setSelectedCustomer(null);
       setSearchTerm("");
     } catch (error) {
@@ -313,11 +361,13 @@ export default function BuysPage() {
                   الكمية
                 </label>
                 <input
-                  type="number"
-                  step="0.001"
-                  value={buyForm.Value}
-                  onChange={(e) => setBuyForm(prev => ({ ...prev, Value: e.target.value }))}
+                  type="text"
+                  value={displayValue}
+                  onChange={handleValueChange}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="مثال: 1,000,000"
+                  dir="ltr"
+                  style={{ textAlign: 'left' }}
                   required
                 />
               </div>
@@ -342,8 +392,10 @@ export default function BuysPage() {
                 </label>
                 <input
                   type="text"
-                  value={buyForm.TotalPrice}
+                  value={displayTotalPrice}
                   className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50"
+                  dir="ltr"
+                  style={{ textAlign: 'left' }}
                   readOnly
                 />
               </div>
@@ -361,7 +413,7 @@ export default function BuysPage() {
                   <option value="">اختر عملة الدفع</option>
                   {currencies?.map((currency) => (
                     <option key={currency.CarID} value={currency.CarID}>
-                      {currency.Carrency} ({currency.CarrencyCode}) - الرصيد: {currency.Balance.toString()}
+                      {currency.Carrency} ({currency.CarrencyCode}) - الرصيد: {formatBalance(currency.Balance)}
                     </option>
                   ))}
                 </select>

@@ -8,6 +8,7 @@ import { useAddCustomerMutation } from "@/state/customersApi";
 import { useGetNationalitiesQuery } from "@/state/nationalitsApi";
 import { Decimal } from "decimal.js";
 import { toast, Toaster } from "react-hot-toast";
+import { formatBalance, formatNumber } from "@/utils/formatNumber";
 
 interface SaleFormData {
   CarID: string;
@@ -48,6 +49,49 @@ export default function SalesPage() {
     PaymentCurrencyID: "",
   });
 
+  // Helper function to parse formatted number input
+  const parseFormattedNumber = (value: string): string => {
+    // Remove commas and return the clean number string
+    return value.replace(/,/g, '');
+  };
+
+  // Helper function to format number for display in input
+  const formatNumberForInput = (value: string): string => {
+    if (!value) return '';
+    try {
+      const cleanValue = parseFormattedNumber(value);
+      if (cleanValue === '') return '';
+      
+      // If the value ends with a decimal point, preserve it
+      if (cleanValue.endsWith('.')) {
+        const baseNum = parseFloat(cleanValue.slice(0, -1));
+        if (isNaN(baseNum)) return value;
+        return baseNum.toLocaleString('en-US') + '.';
+      }
+      
+      const num = parseFloat(cleanValue);
+      if (isNaN(num)) return value;
+      
+      // Count decimal places in original input
+      const decimalPart = cleanValue.split('.')[1];
+      const decimalPlaces = decimalPart ? decimalPart.length : 0;
+      
+      return num.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: Math.max(decimalPlaces, 3)
+      });
+    } catch {
+      return value;
+    }
+  };
+
+  // Helper function to validate numeric input with decimals
+  const isValidNumericInput = (value: string): boolean => {
+    // Allow empty string, numbers, commas, and single decimal point
+    const cleanValue = value.replace(/,/g, '');
+    return /^\d*\.?\d*$/.test(cleanValue);
+  };
+
   const [customerForm, setCustomerForm] = useState<CustomerFormData>({
     Customer: "",
     NatID: "",
@@ -68,6 +112,11 @@ export default function SalesPage() {
   const [createSale] = useCreateSaleMutation();
   const [addCustomer] = useAddCustomerMutation();
 
+  // إعادة تحميل أرصدة العملات عند تغيير مصدر البيع
+  useEffect(() => {
+    refetchCurrencies();
+  }, [saleSource, refetchCurrencies]);
+
   // Filter customers based on search
   const filteredCustomers = customersData?.data?.filter(customer =>
     customer.Customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -79,8 +128,10 @@ export default function SalesPage() {
   useEffect(() => {
     if (saleForm.Value && saleForm.SalePrice) {
       try {
-        const value = new Decimal(saleForm.Value);
-        const price = new Decimal(saleForm.SalePrice);
+        const cleanValue = parseFormattedNumber(saleForm.Value);
+        const cleanPrice = parseFormattedNumber(saleForm.SalePrice);
+        const value = new Decimal(cleanValue);
+        const price = new Decimal(cleanPrice);
         const total = value.mul(price);
         setSaleForm(prev => ({ ...prev, TotalPrice: total.toString() }));
       } catch (error) {
@@ -108,9 +159,9 @@ export default function SalesPage() {
     try {
       await createSale({
         ...saleForm,
-        Value: new Decimal(saleForm.Value),
-        SalePrice: new Decimal(saleForm.SalePrice),
-        TotalPrice: new Decimal(saleForm.TotalPrice),
+        Value: new Decimal(parseFormattedNumber(saleForm.Value)),
+        SalePrice: new Decimal(parseFormattedNumber(saleForm.SalePrice)),
+        TotalPrice: new Decimal(parseFormattedNumber(saleForm.TotalPrice)),
         UserID: "9e2895ae-4afe-4ff2-b3b3-be15cf1c82d6", // Default user ID
       }).unwrap();
       
@@ -296,7 +347,7 @@ export default function SalesPage() {
                   <option value="">اختر العملة</option>
                   {currencies?.map((currency) => (
                     <option key={currency.CarID} value={currency.CarID}>
-                      {currency.Carrency} ({currency.CarrencyCode}) - الرصيد: {currency.Balance.toString()}
+                      {currency.Carrency} ({currency.CarrencyCode}) - الرصيد: {formatBalance(currency.Balance)}
                     </option>
                   ))}
                 </select>
@@ -307,10 +358,16 @@ export default function SalesPage() {
                   الكمية
                 </label>
                 <input
-                  type="number"
-                  step="0.001"
-                  value={saleForm.Value}
-                  onChange={(e) => setSaleForm(prev => ({ ...prev, Value: e.target.value }))}
+                  type="text"
+                  value={saleForm.Value ? formatNumberForInput(saleForm.Value) : ""}
+                  onChange={(e) => {
+                    const inputValue = e.target.value;
+                    if (isValidNumericInput(inputValue)) {
+                      const cleanValue = parseFormattedNumber(inputValue);
+                      setSaleForm(prev => ({ ...prev, Value: cleanValue }));
+                    }
+                  }}
+                  placeholder="مثال: 1,000.500"
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 />
@@ -321,10 +378,16 @@ export default function SalesPage() {
                   سعر البيع
                 </label>
                 <input
-                  type="number"
-                  step="0.001"
-                  value={saleForm.SalePrice}
-                  onChange={(e) => setSaleForm(prev => ({ ...prev, SalePrice: e.target.value }))}
+                  type="text"
+                  value={saleForm.SalePrice ? formatNumberForInput(saleForm.SalePrice) : ""}
+                  onChange={(e) => {
+                    const inputValue = e.target.value;
+                    if (isValidNumericInput(inputValue)) {
+                      const cleanValue = parseFormattedNumber(inputValue);
+                      setSaleForm(prev => ({ ...prev, SalePrice: cleanValue }));
+                    }
+                  }}
+                  placeholder="مثال: 4.750"
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 />
@@ -336,7 +399,7 @@ export default function SalesPage() {
                 </label>
                 <input
                   type="text"
-                  value={saleForm.TotalPrice}
+                  value={saleForm.TotalPrice ? formatNumber(saleForm.TotalPrice) : ""}
                   className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50"
                   readOnly
                 />
@@ -355,7 +418,7 @@ export default function SalesPage() {
                   <option value="">اختر عملة الدفع</option>
                   {currencies?.map((currency) => (
                     <option key={currency.CarID} value={currency.CarID}>
-                      {currency.Carrency} ({currency.CarrencyCode}) - الرصيد: {currency.Balance.toString()}
+                      {currency.Carrency} ({currency.CarrencyCode}) - الرصيد: {formatBalance(currency.Balance)}
                     </option>
                   ))}
                 </select>

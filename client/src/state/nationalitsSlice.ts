@@ -26,7 +26,7 @@ export const fetchNationalits = createAsyncThunk(
   "nationalits/fetchNationalits",
   async () => {
     try {
-      const response = await axios.get("http://localhost:8000/nationalits"); // اضبط الرابط حسب الباك إند
+      const response = await axios.get("http://localhost:8002/nationalits"); // اضبط الرابط حسب الباك إند
       return response.data;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
