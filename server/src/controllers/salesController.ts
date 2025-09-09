@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { Decimal } from "decimal.js";
+import { AuthRequest } from "../middleware/auth";
 
 const prisma = new PrismaClient();
 
@@ -37,16 +38,38 @@ export const listSales = async (req: Request, res: Response): Promise<void> => {
       where.Exist = exist === "true";
     }
 
-    // جلب البيانات مع العلاقات
+    // جلب البيانات مع العلاقات المحسنة
     const sales = await prisma.sales.findMany({
       where,
-      include: {
+      select: {
+        SaleID: true,
+        BillNum: true,
+        Value: true,
+        SalePrice: true,
+        TotalPrice: true,
+        FirstNum: true,
+        LastNum: true,
+        SaleDate: true,
+        Exist: true,
         Customer: {
-          include: {
-            Nationality: true,
+          select: {
+            CustID: true,
+            Customer: true,
+            Nationality: {
+              select: {
+                NatID: true,
+                Nationality: true,
+              },
+            },
           },
         },
-        Carrence: true,
+        Carrence: {
+          select: {
+            CarID: true,
+            Carrency: true,
+            CarrencyCode: true,
+          },
+        },
         User: {
           select: {
             UserName: true,
@@ -57,7 +80,7 @@ export const listSales = async (req: Request, res: Response): Promise<void> => {
         SaleDate: "desc",
       },
       skip,
-      take: limit,
+      take: Math.min(limit, 50), // Limit max results
     });
 
     // جلب العدد الإجمالي
@@ -114,7 +137,7 @@ export const getSale = async (req: Request, res: Response): Promise<void> => {
 };
 
 // إنشاء عملية بيع جديدة
-export const createSale = async (req: Request, res: Response): Promise<void> => {
+export const createSale = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const {
       CarID,
@@ -125,8 +148,14 @@ export const createSale = async (req: Request, res: Response): Promise<void> => 
       FirstNum,
       LastNum,
       PaymentCurrencyID,
-      UserID,
     } = req.body;
+
+    // الحصول على UserID من المستخدم المسجل دخوله
+    const UserID = req.user?.id;
+    if (!UserID) {
+      res.status(401).json({ error: "يجب تسجيل الدخول أولاً" });
+      return;
+    }
 
     // التحقق من وجود العملة المراد بيعها
     const currencyToSell = await prisma.carrences.findUnique({
@@ -274,7 +303,7 @@ export const createSale = async (req: Request, res: Response): Promise<void> => 
 };
 
 // تحديث عملية بيع
-export const updateSale = async (req: Request, res: Response): Promise<void> => {
+export const updateSale = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const updateData = req.body;

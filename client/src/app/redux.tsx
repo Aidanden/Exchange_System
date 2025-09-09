@@ -9,6 +9,7 @@ import {
   Provider,
 } from "react-redux";
 import globalReducer from "@/state";
+import authReducer from "@/state/authSlice";
 import { dashboardApi } from "@/state/dashboardApi";
 import { nationalitsApi } from "@/state/nationalitsApi"; // إضافة nationalitsApi
 import { currenciesApi } from "@/state/currenciesApi"; // إضافة currenciesApi
@@ -16,6 +17,9 @@ import { customersApi } from "@/state/customersApi";
 import { buysApi } from "@/state/buysApi";
 import { salesApi } from "@/state/salesApi";
 import { debtsApi } from "@/state/debtsApi"; // إضافة debtsApi
+import { treasuryApi } from "@/state/treasuryApi"; // إضافة treasuryApi
+import { authApi } from "@/state/authApi"; // إضافة authApi
+import { usersApi } from "@/state/usersApi"; // إضافة usersApi
 import { setupListeners } from "@reduxjs/toolkit/query";
 import {
   persistStore,
@@ -55,12 +59,13 @@ const storage =
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: ["global", "nationalits", "currencies"], // إضافة العملات إلى القائمة البيضاء
+  whitelist: ["global", "auth", "nationalits", "currencies"], // إضافة المصادقة والعملات إلى القائمة البيضاء
 };
 
 /* ROOT REDUCER */
 const rootReducer = combineReducers({
   global: globalReducer,
+  auth: authReducer, // إضافة authReducer
   nationalits: nationalitsReducer, // إضافة nationalitsReducer
   currencies: currenciesReducer, // إضافة currenciesReducer
   /*categories: categoriesReducer,  // إضافة reducer جديد */
@@ -71,6 +76,9 @@ const rootReducer = combineReducers({
   [buysApi.reducerPath]: buysApi.reducer,
   [salesApi.reducerPath]: salesApi.reducer,
   [debtsApi.reducerPath]: debtsApi.reducer, // إضافة debtsApi.reducer
+  [treasuryApi.reducerPath]: treasuryApi.reducer, // إضافة treasuryApi.reducer
+  [authApi.reducerPath]: authApi.reducer, // إضافة authApi.reducer
+  [usersApi.reducerPath]: usersApi.reducer, // إضافة usersApi.reducer
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -84,7 +92,7 @@ export const makeStore = () => {
         serializableCheck: {
           ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
         },
-      }).concat(dashboardApi.middleware, nationalitsApi.middleware, currenciesApi.middleware, customersApi.middleware, buysApi.middleware, salesApi.middleware, debtsApi.middleware), // إضافة middleware الخاص بـ APIs
+      }).concat(dashboardApi.middleware, nationalitsApi.middleware, currenciesApi.middleware, customersApi.middleware, buysApi.middleware, salesApi.middleware, debtsApi.middleware, treasuryApi.middleware, authApi.middleware, usersApi.middleware), // إضافة middleware الخاص بـ APIs
   });
 };
 

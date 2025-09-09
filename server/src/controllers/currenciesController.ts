@@ -1,20 +1,27 @@
 import { Request, Response } from "express";
-import { Decimal } from "@prisma/client/runtime/library.js";
 import prisma from "../models/prismaClient"; // استيراد الاتصال بـ Prisma
+import { Decimal } from "decimal.js";
+import { AuthRequest } from "../middleware/auth";
 import { randomUUID } from "crypto";
 
 // إضافة عملة جديدة
 
 export const addCurrency = async (
-  req: Request,
+  req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {
     const {
       Carrency,
       CarrencyCode,
-      UserID,
     } = req.body;
+
+    // الحصول على UserID من المستخدم المسجل دخوله
+    const UserID = req.user?.id;
+    if (!UserID) {
+      res.status(401).json({ error: "يجب تسجيل الدخول أولاً" });
+      return;
+    }
 
     // استخدام معاملة Prisma
     const result = await prisma.carrences.create({
@@ -23,7 +30,7 @@ export const addCurrency = async (
         CarrencyCode: CarrencyCode ?? "",
         // الرصيد عند إنشاء العملة يكون دائماً 0
         Balance: new Decimal(0),
-        UserID: "9e2895ae-4afe-4ff2-b3b3-be15cf1c82d6",
+        UserID: UserID,
         Exist: true,
       },
     });

@@ -71,9 +71,18 @@ export interface DebtsListResponse {
 export const debtsApi = createApi({
   reducerPath: "debtsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:8002/api",
+    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
+    prepareHeaders: (headers) => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
+      headers.set('Cache-Control', 'max-age=30');
+      return headers;
+    },
   }),
   tagTypes: ["Debt", "Currency", "Treasury"],
+  keepUnusedDataFor: 60,
   endpoints: (build) => ({
     // Create a new debt
     createDebt: build.mutation<{ message: string; data: Debt }, CreateDebtRequest>({

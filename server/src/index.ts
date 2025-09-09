@@ -12,6 +12,10 @@ import customersRoute from "./routes/customersRoute";
 import buysRoute from "./routes/buysRoute";
 import salesRoute from "./routes/salesRoute";
 import debtsRoute from "./routes/debtsRoute";
+import treasuryRoute from "./routes/treasuryRoute";
+import authRoute from "./routes/authRoute";
+import usersRoute from "./routes/usersRoute";
+
 
 /*CONFIGRATION*/
 dotenv.config();
@@ -28,21 +32,20 @@ app.use(cors({
   credentials: true
 }));
 
-// Disable caching for all API routes
+// Enable caching for GET requests only
 app.use('/api', (req, res, next) => {
-  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-  res.set('Pragma', 'no-cache');
-  res.set('Expires', '0');
-  res.removeHeader('ETag');
+  if (req.method === 'GET') {
+    res.set('Cache-Control', 'public, max-age=30');
+  } else {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  }
   next();
 });
 
-// Add request logging middleware for debugging
+// Simplified request logging for production performance
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path}`);
-  console.log('Headers:', req.headers);
-  if (req.body && Object.keys(req.body).length > 0) {
-    console.log('Body:', req.body);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`${req.method} ${req.path}`);
   }
   next();
 });
@@ -56,6 +59,10 @@ app.use('/api', customersRoute);
 app.use('/api/buys', buysRoute);
 app.use('/api/sales', salesRoute);
 app.use('/api/debts', debtsRoute);
+app.use('/api/treasury', treasuryRoute);
+app.use('/api/auth', authRoute);
+app.use('/api', usersRoute);
+
 
 // Health check endpoint
 app.get("/health", (req, res) => {
@@ -87,7 +94,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 /*SERVER */
-const port = process.env.PORT || 8001;
+const port = process.env.PORT || 8000;
 app.listen(port, () => {
   console.log(`Server running on port: ${port}`);
 });

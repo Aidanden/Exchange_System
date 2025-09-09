@@ -1,103 +1,31 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
+// This file is deprecated. Use currenciesApi.ts with RTK Query instead.
+// The currenciesApi.ts file already uses the correct approach with:
+// - process.env.NEXT_PUBLIC_API_BASE_URL for base URL
+// - next.config.ts rewrites for API routing
+// - RTK Query for better caching and state management
 
-interface Currency {
-  CarID: string;
-  Carrency: string;
-  CarrencyCode: string;
-}
+import { createSlice } from "@reduxjs/toolkit";
+
+// This slice is kept for backward compatibility but should not be used
+// Use currenciesApi hooks instead:
+// - useGetCurrenciesQuery
+// - useAddCurrencyMutation
+// - useUpdateCurrencyMutation
+// - useDeleteCurrencyMutation
 
 interface CurrenciesState {
-  currencies: Currency[];
-  loading: boolean;
-  error: string | null;
+  // Deprecated - use RTK Query state instead
+  _deprecated: boolean;
 }
 
 const initialState: CurrenciesState = {
-  currencies: [],
-  loading: false,
-  error: null,
+  _deprecated: true,
 };
-
-export const fetchCurrencies = createAsyncThunk(
-  "currencies/fetchCurrencies",
-  async () => {
-    try {
-      const response = await axios.get("http://localhost:8002/currencies");
-      return response.data;
-    } catch (error) {
-      throw new Error("Failed to fetch currencies");
-    }
-  }
-);
-
-export const addCurrency = createAsyncThunk(
-  "currencies/addCurrency",
-  async (currencyData: Omit<Currency, "CarID">) => {
-    try {
-      const response = await axios.post("http://localhost:8002/currencies", currencyData);
-      return response.data;
-    } catch (error) {
-      throw new Error("Failed to add currency");
-    }
-  }
-);
-
-export const updateCurrency = createAsyncThunk(
-  "currencies/updateCurrency",
-  async (currencyData: Currency) => {
-    try {
-      const response = await axios.put(`http://localhost:8002/currencies/${currencyData.CarID}`, currencyData);
-      return response.data;
-    } catch (error) {
-      throw new Error("Failed to update currency");
-    }
-  }
-);
-
-export const deleteCurrency = createAsyncThunk(
-  "currencies/deleteCurrency",
-  async (CarID: string) => {
-    try {
-      await axios.delete(`http://localhost:8002/currencies/${CarID}`);
-      return CarID;
-    } catch (error) {
-      throw new Error("Failed to delete currency");
-    }
-  }
-);
 
 const currenciesSlice = createSlice({
   name: "currencies",
   initialState,
   reducers: {},
-  extraReducers: (builder) => {
-    builder
-      .addCase(fetchCurrencies.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchCurrencies.fulfilled, (state, action) => {
-        state.loading = false;
-        state.currencies = action.payload;
-      })
-      .addCase(fetchCurrencies.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || "Something went wrong";
-      })
-      .addCase(addCurrency.fulfilled, (state, action) => {
-        state.currencies.push(action.payload);
-      })
-      .addCase(updateCurrency.fulfilled, (state, action) => {
-        const index = state.currencies.findIndex(c => c.CarID === action.payload.CarID);
-        if (index !== -1) {
-          state.currencies[index] = action.payload;
-        }
-      })
-      .addCase(deleteCurrency.fulfilled, (state, action) => {
-        state.currencies = state.currencies.filter(c => c.CarID !== action.payload);
-      });
-  },
 });
 
 export default currenciesSlice.reducer;

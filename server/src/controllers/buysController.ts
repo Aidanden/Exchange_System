@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import prisma from "../models/prismaClient";
 import { Decimal } from "decimal.js";
+import { AuthRequest } from "../middleware/auth";
 
 // دالة لتوليد رقم الفاتورة التالي
 async function generateNextBillNum(): Promise<string> {
@@ -30,7 +31,7 @@ async function generateNextBillNum(): Promise<string> {
 }
 
 // إنشاء عملية شراء جديدة
-export const createBuy = async (req: Request, res: Response): Promise<void> => {
+export const createBuy = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const {
       CarID,
@@ -40,12 +41,18 @@ export const createBuy = async (req: Request, res: Response): Promise<void> => {
       CustID,
       FirstNum,
       LastNum,
-      UserID,
       PaymentCurrencyID, // العملة المستخدمة في الدفع
     } = req.body;
 
+    // الحصول على UserID من المستخدم المسجل دخوله
+    const UserID = req.user?.id;
+    if (!UserID) {
+      res.status(401).json({ error: "يجب تسجيل الدخول أولاً" });
+      return;
+    }
+
     // التحقق من البيانات المطلوبة
-    if (!CarID || !Value || !BuyPrice || !TotalPrice || !CustID || !UserID || !PaymentCurrencyID) {
+    if (!CarID || !Value || !BuyPrice || !TotalPrice || !CustID || !PaymentCurrencyID) {
       res.status(400).json({ error: "جميع الحقول مطلوبة" });
       return;
     }
@@ -159,7 +166,7 @@ export const createBuy = async (req: Request, res: Response): Promise<void> => {
 export const listBuys = async (req: Request, res: Response): Promise<void> => {
   try {
     const page = Math.max(parseInt((req.query.page as string) || "1", 10), 1);
-    const limit = Math.min(Math.max(parseInt((req.query.limit as string) || "20", 10), 1), 200);
+    const limit = Math.min(Math.max(parseInt((req.query.limit as string) || "20", 10), 1), 50); // Reduced max limit
     const search = (req.query.search as string) || "";
     const custId = (req.query.custId as string) || undefined;
     const existParam = req.query.exist as string | undefined;
@@ -178,15 +185,38 @@ export const listBuys = async (req: Request, res: Response): Promise<void> => {
         : {}),
     };
 
+    // Optimized query with selective includes
     const [total, buys] = await Promise.all([
       prisma.buys.count({ where }),
       prisma.buys.findMany({
         where,
-        include: {
-          Carrence: true,
+        select: {
+          BuyID: true,
+          BillNum: true,
+          Value: true,
+          BuyPrice: true,
+          TotalPrice: true,
+          FirstNum: true,
+          LastNum: true,
+          BuyDate: true,
+          Exist: true,
+          Carrence: {
+            select: {
+              CarID: true,
+              Carrency: true,
+              CarrencyCode: true,
+            },
+          },
           Customer: {
-            include: {
-              Nationality: true,
+            select: {
+              CustID: true,
+              Customer: true,
+              Nationality: {
+                select: {
+                  NatID: true,
+                  Nationality: true,
+                },
+              },
             },
           },
           User: {
@@ -253,7 +283,7 @@ export const getNextBillNumber = async (req: Request, res: Response): Promise<vo
 };
 
 // تعديل عملية شراء
-export const updateBuy = async (req: Request, res: Response): Promise<void> => {
+export const updateBuy = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const {
@@ -319,7 +349,7 @@ export const updateBuy = async (req: Request, res: Response): Promise<void> => {
           Debit: new Decimal(0),
           FinalBalance: new Decimal(0),
           Statment: `تعديل عملية شراء - فاتورة رقم ${updatedBuy.BillNum}`,
-          UserID: existingBuy.UserID,
+          UserID: req.user?.id || existingBuy.UserID,
           Exist: true,
         },
       });

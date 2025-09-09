@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import DashboardWrapper from "./dashboardWrapper"
+import DashboardWrapper from "./dashboardWrapper";
+import AuthProvider from "@/components/AuthProvider";
+import StoreProvider from "./redux";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -28,7 +30,11 @@ export default function RootLayout({
     <html lang="ar">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <DashboardWrapper>{children}</DashboardWrapper>
+        <StoreProvider>
+          <AuthProvider>
+            <DashboardWrapper>{children}</DashboardWrapper>
+          </AuthProvider>
+        </StoreProvider>
       </body>
     </html>
   );

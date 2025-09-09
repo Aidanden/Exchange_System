@@ -2,15 +2,20 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { Currency } from "./types";
 
 export const currenciesApi = createApi({
-  baseQuery: fetchBaseQuery({ 
-    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8002",
-    prepareHeaders: (headers, { getState }) => {
-      console.log("API Base URL:", process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8002");
+  reducerPath: "currenciesApi",
+  baseQuery: fetchBaseQuery({
+    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
+    prepareHeaders: (headers) => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
+      headers.set('Cache-Control', 'max-age=60');
       return headers;
     },
   }),
-  reducerPath: "currenciesApi",
   tagTypes: ["Currencies", "Currency"],
+  keepUnusedDataFor: 120,
   endpoints: (build) => ({
     getCurrencies: build.query<Currency[], void>({
       query: () => "/api/currencies/currencies",
@@ -49,15 +54,10 @@ export const currenciesApi = createApi({
       ],
     }),
     deleteCurrency: build.mutation<void, string>({
-      query: (carID) => {
-        console.log("Delete currency API call - carID:", carID);
-        const url = `/api/currencies/delete-currency/${carID}`;
-        console.log("Delete currency URL:", url);
-        return {
-          url,
-          method: "DELETE",
-        };
-      },
+      query: (carID) => ({
+        url: `/api/currencies/delete-currency/${carID}`,
+        method: "DELETE",
+      }),
       invalidatesTags: [{ type: "Currencies", id: "LIST" }],
     }),
     addCurrencyBalance: build.mutation<

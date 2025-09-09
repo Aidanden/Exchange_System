@@ -13,22 +13,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Users {
-  UserID            String              @id
-  UserName          String
-  Email             String
-  Customers         Customers[]
-  Nationalits       Nationalits[]
-  Carrences         Carrences[]
-  Buys              Buys[]
-  TreasuryMovements TreasuryMovements[]
-  Sales             Sales[]
-  ExpenseItems      ExpenseItems[]
-  ExpanseAccounts   ExpanseAccounts[]
-  Debts             Debts[]
-
-  DebtPayments DebtPayments[]
-}
 
 model Categories {
   CatID       String        @id @default(cuid())
@@ -70,6 +54,11 @@ model Customers {
   Nationality    Nationalits     @relation(fields: [NatID], references: [NatID])
   User           Users           @relation(fields: [UserID], references: [UserID])
   Sales          Sales[]
+  PassportDocuments CustomerPassportDocuments[]
+
+  @@index([Exist])
+  @@index([Customer])
+  @@index([NatID])
 }
 
 
@@ -107,6 +96,11 @@ model Buys {
   User       Users     @relation(fields: [UserID], references: [UserID])
   Carrence   Carrences @relation(fields: [CarID], references: [CarID])
   Customer   Customers @relation(fields: [CustID], references: [CustID])
+
+  @@index([Exist, BuyDate])
+  @@index([CustID, Exist])
+  @@index([BillNum])
+  @@index([CarID])
 }
 
 model TreasuryMovements {
@@ -141,6 +135,11 @@ model Sales {
   Carrence   Carrences @relation(fields: [CarID], references: [CarID])
   User       Users     @relation(fields: [UserID], references: [UserID])
   Customer   Customers @relation(fields: [CustID], references: [CustID])
+
+  @@index([Exist, SaleDate])
+  @@index([CustID, Exist])
+  @@index([BillNum])
+  @@index([CarID])
 }
 
 model ExpenseItems {
@@ -187,6 +186,12 @@ model Debts {
   User         Users     @relation(fields: [UserID], references: [UserID])
   Currency     Carrences @relation(fields: [CarID], references: [CarID])
   Payments     DebtPayments[]
+
+  @@index([Exist, Status])
+  @@index([DebtType, Exist])
+  @@index([DebtorName])
+  @@index([CarID])
+  @@index([RemainingAmount])
 }
 
 model DebtPayments {
@@ -204,4 +209,85 @@ model DebtPayments {
   // Relations
   Debt         Debts     @relation(fields: [DebtID], references: [DebtID])
   User         Users     @relation(fields: [UserID], references: [UserID])
+}
+
+model CustomerPassportDocuments {
+  DocumentID   String    @id @default(cuid())
+  CustID       String    // Reference to customer
+  DocumentType String    // "PASSPORT_IMAGE" or "PASSPORT_PDF"
+  FileName     String    // Original file name
+  FilePath     String    // Path where file is stored
+  FileSize     Int       // File size in bytes
+  MimeType     String    // MIME type (image/jpeg, image/png, application/pdf, etc.)
+  Description  String?   // Optional description
+  UploadDate   DateTime  @default(now())
+  UserID       String    // User who uploaded the document
+  Exist        Boolean   @default(true)
+  CreatedAt    DateTime  @default(now())
+  UpdatedAt    DateTime  @updatedAt
+  
+  // Relations
+  Customer     Customers @relation(fields: [CustID], references: [CustID])
+  User         Users     @relation(fields: [UserID], references: [UserID])
+}
+
+model Users {
+  UserID       String    @id @default(cuid())
+  UserName     String    @unique
+  Password     String    // سيتم تشفيرها باستخدام bcrypt
+  FullName     String
+  Email        String?   @unique
+  Phone        String?
+  RoleID       String    // معرف الدور
+  IsActive     Boolean   @default(true)
+  LastLogin    DateTime? // آخر تسجيل دخول
+  PasswordChangedAt DateTime? // تاريخ آخر تغيير لكلمة المرور
+  LoginAttempts Int      @default(0) // عدد محاولات تسجيل الدخول الفاشلة
+  LockedUntil  DateTime? // قفل الحساب حتى تاريخ معين
+  CreatedAt    DateTime  @default(now())
+  UpdatedAt    DateTime  @updatedAt
+
+  // Relations
+  Role         UserRoles @relation(fields: [RoleID], references: [RoleID])
+  Sessions     UserSessions[]
+  Customers    Customers[]
+  Nationalits  Nationalits[]
+  Carrences    Carrences[]
+  Buys         Buys[]
+  Sales        Sales[]
+  Debts        Debts[]
+  TreasuryMovements TreasuryMovements[]
+  ExpenseItems ExpenseItems[]
+  ExpanseAccounts ExpanseAccounts[]
+  DebtPayments DebtPayments[]
+  CustomerPassportDocuments CustomerPassportDocuments[]
+}
+
+model UserRoles {
+  RoleID      String    @id @default(cuid())
+  RoleName    String    @unique // اسم الدور (admin, manager, cashier, accountant)
+  DisplayName String    // الاسم المعروض باللغة العربية
+  Permissions Json      // الصلاحيات كـ JSON array
+  Description String?   // وصف الدور
+  IsActive    Boolean   @default(true)
+  CreatedAt   DateTime  @default(now())
+  UpdatedAt   DateTime  @updatedAt
+  
+  // Relations
+  Users       Users[]
+}
+
+model UserSessions {
+  SessionID   String    @id @default(cuid())
+  UserID      String    // معرف المستخدم
+  Token       String    @unique // JWT token
+  ExpiresAt   DateTime  // تاريخ انتهاء الجلسة
+  IsActive    Boolean   @default(true)
+  IPAddress   String?   // عنوان IP
+  UserAgent   String?   // معلومات المتصفح
+  CreatedAt   DateTime  @default(now())
+  UpdatedAt   DateTime  @updatedAt
+  
+  // Relations
+  User        Users     @relation(fields: [UserID], references: [UserID])
 }

@@ -2,10 +2,11 @@ import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { randomUUID } from "crypto";
 import Decimal from "decimal.js";
+import { AuthRequest } from "../middleware/auth";
 
 const prisma = new PrismaClient();
 
-export const createDebt = async (req: Request, res: Response): Promise<void> => {
+export const createDebt = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     // Debug: Log the raw request body
     console.log("Raw request body:", req.body);
@@ -20,13 +21,19 @@ export const createDebt = async (req: Request, res: Response): Promise<void> => 
       CarID,
       Amount,
       Description,
-      UserID,
     } = req.body;
 
+    // الحصول على UserID من المستخدم المسجل دخوله
+    const UserID = req.user?.id;
+    if (!UserID) {
+      res.status(401).json({ error: "يجب تسجيل الدخول أولاً" });
+      return;
+    }
+
     // Validate required fields
-    if (!DebtType || !DebtorName || !CarID || !Amount || !UserID) {
+    if (!DebtType || !DebtorName || !CarID || !Amount) {
       res.status(400).json({
-        message: "DebtType, DebtorName, CarID, Amount, and UserID are required",
+        message: "DebtType, DebtorName, CarID, and Amount are required",
       });
       return;
     }
@@ -179,26 +186,52 @@ export const listDebts = async (req: Request, res: Response): Promise<void> => {
     // Get total count
     const total = await prisma.debts.count({ where });
 
-    // Get debts with pagination
+    // Get debts with pagination - optimized query
     const debts = await prisma.debts.findMany({
       where,
-      include: {
-        Currency: true,
-        User: true,
+      select: {
+        DebtID: true,
+        DebtType: true,
+        DebtorName: true,
+        DebtorPhone: true,
+        DebtorAddress: true,
+        Amount: true,
+        PaidAmount: true,
+        RemainingAmount: true,
+        Description: true,
+        DebtDate: true,
+        Status: true,
+        CreatedAt: true,
+        UpdatedAt: true,
+        Currency: {
+          select: {
+            CarID: true,
+            Carrency: true,
+            CarrencyCode: true,
+            Balance: true,
+          },
+        },
+        User: {
+          select: {
+            UserID: true,
+            UserName: true,
+            Email: true,
+          },
+        },
       },
       orderBy: [
         {
-          RemainingAmount: "desc", // Show debts with remaining amounts first
+          RemainingAmount: "desc",
         },
         {
-          Status: "asc", // Show ACTIVE and PARTIAL debts first, then PAID/RECEIVED
+          Status: "asc",
         },
         {
           CreatedAt: "desc",
         },
       ],
       skip,
-      take: Number(limit),
+      take: Math.min(Number(limit), 50), // Limit max results
     });
 
     const totalPages = Math.ceil(total / Number(limit));
@@ -221,15 +254,22 @@ export const listDebts = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const addDebtPayment = async (req: Request, res: Response): Promise<void> => {
+export const addDebtPayment = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { debtId } = req.params;
-    const { Amount, Description, UserID } = req.body;
+    const { Amount, Description } = req.body;
+
+    // الحصول على UserID من المستخدم المسجل دخوله
+    const UserID = req.user?.id;
+    if (!UserID) {
+      res.status(401).json({ error: "يجب تسجيل الدخول أولاً" });
+      return;
+    }
 
     // Validate required fields
-    if (!debtId || !Amount || !UserID) {
+    if (!debtId || !Amount) {
       res.status(400).json({
-        message: "DebtID, Amount and UserID are required",
+        message: "DebtID and Amount are required",
       });
       return;
     }

@@ -10,9 +10,20 @@ type ListResponse = {
 };
 
 export const customersApi = createApi({
-  baseQuery: fetchBaseQuery({ baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL }),
   reducerPath: "customersApi",
+  baseQuery: fetchBaseQuery({
+    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
+    prepareHeaders: (headers) => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
+      headers.set('Cache-Control', 'max-age=60');
+      return headers;
+    },
+  }),
   tagTypes: ["Customers"],
+  keepUnusedDataFor: 120,
   endpoints: (build) => ({
     listCustomers: build.query<ListResponse, { page?: number; limit?: number; search?: string; natId?: string; exist?: boolean; customerType?: boolean } | void>({
       query: (args) => {

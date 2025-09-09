@@ -74,7 +74,7 @@ const Nationalities = () => {
       }).unwrap();
       setEditModalOpen(false);
       toast.success("تم التعديل بنجاح!");
-      refetch();
+      await refetch();
     } catch (e) {
       console.error("Error updating nationality:", e);
       toast.error("حدث خطأ أثناء التعديل.");
@@ -92,11 +92,11 @@ const Nationalities = () => {
       await deleteNationality(deletingId).unwrap();
       toast.success("تم حذف الجنسية بنجاح!");
       setDeletingId(null);
-      refetch();
+      // إعادة تحميل البيانات فوراً بعد الحذف
+      await refetch();
     } catch (error) {
       console.error("Error deleting nationality:", error);
       toast.error("حدث خطأ أثناء حذف الجنسية.");
-    } finally {
       setDeletingId(null);
     }
   };
@@ -254,7 +254,7 @@ const Nationalities = () => {
 
         {/* Edit Modal */}
         {isEditModalOpen && currentEditData && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[3]">
             <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">تعديل الجنسية</h2>
@@ -329,7 +329,7 @@ const Nationalities = () => {
 
         {/* Delete Confirmation Modal */}
         {deletingId && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[3]">
             <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
               <div className="mb-4">
                 <h2 className="text-xl font-semibold text-gray-900 mb-2">تأكيد الحذف</h2>

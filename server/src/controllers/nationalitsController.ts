@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../models/prismaClient";// استيراد الاتصال بـ Prisma
+import { AuthRequest } from "../middleware/auth";
 
 
 // جلب كل الجنسيات
@@ -16,8 +17,15 @@ export const getNationalits = async (req: Request, res: Response) => {
 };
 
 // إضافة جنسية جديدة
-export const createNationalit = async (req: Request, res: Response): Promise<void> => {
-  const { Nationality, CatID, UserID } = req.body;
+export const createNationalit = async (req: AuthRequest, res: Response): Promise<void> => {
+  const { Nationality, CatID } = req.body;
+
+  // الحصول على UserID من المستخدم المسجل دخوله
+  const UserID = req.user?.id;
+  if (!UserID) {
+    res.status(401).json({ error: "يجب تسجيل الدخول أولاً" });
+    return;
+  }
 
   try {
     // التحقق من إدخال الحقول المطلوبة
@@ -42,7 +50,7 @@ export const createNationalit = async (req: Request, res: Response): Promise<voi
         Nationality,
         CatID,
         Exist: true,
-        UserID:"9e2895ae-4afe-4ff2-b3b3-be15cf1c82d6", // إذا كان الحقل اختيارياً، يمكنك تخطيه إذا لم يتم تمريره
+        UserID: UserID,
       },
     });
 
@@ -55,13 +63,14 @@ export const createNationalit = async (req: Request, res: Response): Promise<voi
 
 
 // تعديل جنسية
-export const updateNationalit = async (req: Request, res: Response) => {
+export const updateNationalit = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
-  const { Nationality, CatID, UserID } = req.body;
+  const { Nationality, CatID } = req.body;
+  const UserID = req.user?.id || "admin_user_001";
   try {
     const updatedNationalit = await prisma.nationalits.update({
       where: { NatID: id },
-      data: { Nationality, CatID, UserID:"9e2895ae-4afe-4ff2-b3b3-be15cf1c82d6" },
+      data: { Nationality, CatID, UserID },
     });
     res.json(updatedNationalit);
   } catch (error) {
@@ -71,13 +80,13 @@ export const updateNationalit = async (req: Request, res: Response) => {
 };
 
 // حذف جنسية
-export const deleteNationalit = async (req: Request, res: Response) => {
+export const deleteNationalit = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   try {
     //await prisma.nationalits.delete({ where: { NatID: id } });
     const updatedNationalit = await prisma.nationalits.update({
       where: { NatID: id },
-      data: { Exist:false, UserID:"9e2895ae-4afe-4ff2-b3b3-be15cf1c82d6" },
+      data: { Exist: false, UserID: req.user?.id || "admin_user_001" },
     });
     res.status(204).end();
   } catch (error) {

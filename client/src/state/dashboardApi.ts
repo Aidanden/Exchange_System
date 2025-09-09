@@ -2,13 +2,28 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { DashboardMetrics } from "./types";
 
 export const dashboardApi = createApi({
-  baseQuery: fetchBaseQuery({ baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL }),
+  baseQuery: fetchBaseQuery({ 
+    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
+    prepareHeaders: (headers) => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
+      headers.set('Cache-Control', 'max-age=30');
+      return headers;
+    },
+  }),
   reducerPath: "dashboardApi",
   tagTypes: ["DashboardMetrics"],
+  keepUnusedDataFor: 300, // 5 دقائق
+  refetchOnMountOrArgChange: 300, // 5 دقائق
+  refetchOnFocus: false,
+  refetchOnReconnect: true,
   endpoints: (build) => ({
     getDashboardMetrics: build.query<DashboardMetrics, void>({
       query: () => "/api/dashboard/dashboard",
       providesTags: ["DashboardMetrics"],
+      keepUnusedDataFor: 300,
     }),
   }),
 });

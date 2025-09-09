@@ -76,15 +76,12 @@ export default function BuysListPage() {
   };
 
   // Format date with Arabic numerals (not Hindi)
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+  const formatDate = (dateInput: string | Date) => {
+    const date = new Date(dateInput);
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    
-    return `${year}/${month}/${day} ${hours}:${minutes}`;
+    return `${year}-${month}-${day}`;
   };
 
   // استخدام دالة التنسيق المشتركة من utils
@@ -246,7 +243,7 @@ export default function BuysListPage() {
 
         {/* Delete Confirmation Modal */}
         {deletingBuy && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[3]">
             <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
               <div className="mb-4">
                 <h2 className="text-xl font-semibold text-gray-900 mb-2">تأكيد الحذف</h2>

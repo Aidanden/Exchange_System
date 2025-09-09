@@ -1,60 +1,31 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
+// This file is deprecated. Use nationalitsApi.ts with RTK Query instead.
+// The nationalitsApi.ts file already uses the correct approach with:
+// - process.env.NEXT_PUBLIC_API_BASE_URL for base URL
+// - next.config.ts rewrites for API routing
+// - RTK Query for better caching and state management
 
-// تحديد نوع البيانات
-interface Nationality {
-  NatID: string;
-  Nationality: string;
-  Exist: boolean;
-  Categorie: { Categorie: string };
-}
+import { createSlice } from "@reduxjs/toolkit";
+
+// This slice is kept for backward compatibility but should not be used
+// Use nationalitsApi hooks instead:
+// - useGetNationalitiesQuery
+// - useAddNationalityMutation
+// - useUpdateNationalityMutation
+// - useDeleteNationalityMutation
 
 interface NationalitsState {
-  nationalities: Nationality[];
-  loading: boolean;
-  error: string | null;
+  // Deprecated - use RTK Query state instead
+  _deprecated: boolean;
 }
 
 const initialState: NationalitsState = {
-  nationalities: [],
-  loading: false,
-  error: null,
+  _deprecated: true,
 };
 
-// إنشاء الـ Thunk لجلب البيانات
-export const fetchNationalits = createAsyncThunk(
-  "nationalits/fetchNationalits",
-  async () => {
-    try {
-      const response = await axios.get("http://localhost:8002/nationalits"); // اضبط الرابط حسب الباك إند
-      return response.data;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
-      throw new Error("Failed to fetch data");
-    }
-  }
-);
-
-// إنشاء slice لredux
 const nationalitsSlice = createSlice({
   name: "nationalits",
   initialState,
   reducers: {},
-  extraReducers: (builder) => {
-    builder
-      .addCase(fetchNationalits.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchNationalits.fulfilled, (state, action) => {
-        state.loading = false;
-        state.nationalities = action.payload;
-      })
-      .addCase(fetchNationalits.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || "Something went wrong";
-      });
-  },
 });
 
 export default nationalitsSlice.reducer;

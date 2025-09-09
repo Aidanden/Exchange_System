@@ -1,5 +1,9 @@
 import { Request, Response } from "express";
 import prisma from "../models/prismaClient";
+import multer from "multer";
+import path from "path";
+import fs from "fs/promises";
+import { AuthRequest } from "../middleware/auth";
 
 // GET /api/customers
 // Supports: page, limit, search, natId, exist
@@ -41,6 +45,10 @@ export const listCustomers = async (req: Request, res: Response) => {
         where,
         include: {
           Nationality: true,
+          PassportDocuments: {
+            where: { Exist: true },
+            select: { DocumentID: true }
+          }
         },
         orderBy: { OperDate: "desc" },
         skip: (page - 1) * limit,
@@ -77,7 +85,7 @@ export const getCustomerById = async (req: Request,res: Response): Promise<void>
 
 
 // POST /api/customers
-export const createCustomer = async (req: Request,res: Response): Promise<void> => {
+export const createCustomer = async (req: AuthRequest,res: Response): Promise<void> => {
   try {
     const {
       Customer,
@@ -112,7 +120,7 @@ export const createCustomer = async (req: Request,res: Response): Promise<void> 
         NationalNumber: NationalNumber || null,
         Address: Address || null,
         Phone: Phone || null,
-        UserID: UserID || "9e2895ae-4afe-4ff2-b3b3-be15cf1c82d6",
+        UserID: req.user?.id || "9e2895ae-4afe-4ff2-b3b3-be15cf1c82d6",
         Exist: true,
         CustomerType: CustomerType !== undefined ? CustomerType : true,
       },
@@ -129,7 +137,7 @@ export const createCustomer = async (req: Request,res: Response): Promise<void> 
 
 
 // PUT /api/customers/:id
-export const updateCustomer = async (req: Request, res: Response) => {
+export const updateCustomer = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const data = req.body;
@@ -149,7 +157,7 @@ export const updateCustomer = async (req: Request, res: Response) => {
         NationalNumber: data.NationalNumber ?? null,
         Address: data.Address ?? null,
         Phone: data.Phone ?? null,
-        UserID: data.UserID || "9e2895ae-4afe-4ff2-b3b3-be15cf1c82d6",
+        UserID: req.user?.id || "9e2895ae-4afe-4ff2-b3b3-be15cf1c82d6",
         CustomerType: data.CustomerType !== undefined ? data.CustomerType : true,
       },
     });
@@ -171,6 +179,194 @@ export const deleteCustomer = async (req: Request, res: Response) => {
     res.status(204).end();
   } catch (error) {
     console.error("deleteCustomer error", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: async (req: any, file: any, cb: any) => {
+    const uploadDir = path.join(process.cwd(), 'uploads', 'passport-documents');
+    try {
+      await fs.mkdir(uploadDir, { recursive: true });
+      cb(null, uploadDir);
+    } catch (error) {
+      cb(error as Error, uploadDir);
+    }
+  },
+  filename: (req: any, file: any, cb: any) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, `passport-${uniqueSuffix}${ext}`);
+  }
+});
+
+const fileFilter = (req: any, file: any, cb: any) => {
+  // Allow images and PDFs
+  if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
+    cb(null, true);
+  } else {
+    cb(new Error('Only images and PDF files are allowed'));
+  }
+};
+
+export const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: fileFilter
+});
+
+// POST /api/customers/:id/passport-documents
+export const uploadPassportDocuments = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id: customerId } = req.params;
+    const files = req.files as any[];
+    
+    if (!files || files.length === 0) {
+      res.status(400).json({ error: "No files uploaded" });
+      return;
+    }
+
+    if (!customerId) {
+      res.status(400).json({ error: "Customer ID is required" });
+      return;
+    }
+
+    // Verify customer exists
+    const customer = await prisma.customers.findUnique({
+      where: { CustID: customerId }
+    });
+
+    if (!customer) {
+      res.status(404).json({ error: "Customer not found" });
+      return;
+    }
+
+    // Create document records in database
+    const documentPromises = files.map(file => {
+      const documentType = file.mimetype.startsWith('image/') ? 'PASSPORT_IMAGE' : 'PASSPORT_PDF';
+      
+      return prisma.customerPassportDocuments.create({
+        data: {
+          CustID: customerId,
+          DocumentType: documentType,
+          FileName: file.originalname,
+          FilePath: file.path,
+          FileSize: file.size,
+          MimeType: file.mimetype,
+          UserID: req.user?.id || "9e2895ae-4afe-4ff2-b3b3-be15cf1c82d6",
+        }
+      });
+    });
+
+    const documents = await Promise.all(documentPromises);
+
+    res.status(201).json({
+      message: `Successfully uploaded ${files.length} document(s)`,
+      documents: documents
+    });
+
+  } catch (error) {
+    console.error("uploadPassportDocuments error", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// GET /api/customers/:id/passport-documents
+export const getCustomerPassportDocuments = async (req: Request, res: Response) => {
+  try {
+    const { id: customerId } = req.params;
+
+    const documents = await prisma.customerPassportDocuments.findMany({
+      where: {
+        CustID: customerId,
+        Exist: true
+      },
+      orderBy: {
+        CreatedAt: 'desc'
+      }
+    });
+
+    res.json(documents);
+  } catch (error) {
+    console.error("getCustomerPassportDocuments error", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// DELETE /api/customers/:customerId/passport-documents/:documentId
+export const deletePassportDocument = async (req: Request, res: Response) => {
+  try {
+    const { customerId, documentId } = req.params;
+
+    // Find the document
+    const document = await prisma.customerPassportDocuments.findFirst({
+      where: {
+        DocumentID: documentId,
+        CustID: customerId,
+        Exist: true
+      }
+    });
+
+    if (!document) {
+      res.status(404).json({ error: "Document not found" });
+      return;
+    }
+
+    // Soft delete the document record
+    await prisma.customerPassportDocuments.update({
+      where: { DocumentID: documentId },
+      data: { Exist: false }
+    });
+
+    // Optionally delete the physical file
+    try {
+      await fs.unlink(document.FilePath);
+    } catch (fileError) {
+      console.warn("Could not delete physical file:", fileError);
+    }
+
+    res.status(204).end();
+  } catch (error) {
+    console.error("deletePassportDocument error", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// GET /api/customers/:customerId/passport-documents/:documentId/download
+export const downloadPassportDocument = async (req: Request, res: Response) => {
+  try {
+    const { customerId, documentId } = req.params;
+
+    const document = await prisma.customerPassportDocuments.findFirst({
+      where: {
+        DocumentID: documentId,
+        CustID: customerId,
+        Exist: true
+      }
+    });
+
+    if (!document) {
+      res.status(404).json({ error: "Document not found" });
+      return;
+    }
+
+    // Check if file exists
+    try {
+      await fs.access(document.FilePath);
+    } catch {
+      res.status(404).json({ error: "File not found on server" });
+      return;
+    }
+
+    res.setHeader('Content-Type', document.MimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="${document.FileName}"`);
+    res.sendFile(path.resolve(document.FilePath));
+
+  } catch (error) {
+    console.error("downloadPassportDocument error", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };

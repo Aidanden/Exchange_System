@@ -11,9 +11,20 @@ type ListResponse = {
 };
 
 export const buysApi = createApi({
-  baseQuery: fetchBaseQuery({ baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL }),
+  baseQuery: fetchBaseQuery({ 
+    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
+    prepareHeaders: (headers) => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
+      headers.set('Cache-Control', 'max-age=30');
+      return headers;
+    },
+  }),
   reducerPath: "buysApi",
   tagTypes: ["Buys", "Currencies", "Currency"],
+  keepUnusedDataFor: 60, // Keep data for 60 seconds
   endpoints: (build) => ({
     listBuys: build.query<ListResponse, { page?: number; limit?: number; search?: string; custId?: string; exist?: boolean } | void>({
       query: (args) => {
@@ -34,6 +45,7 @@ export const buysApi = createApi({
               { type: "Buys", id: "LIST" },
             ]
           : [{ type: "Buys", id: "LIST" }],
+      // Remove automatic refetch to improve performance
     }),
 
     getBuy: build.query<Buys, string>({
@@ -45,39 +57,8 @@ export const buysApi = createApi({
       query: (body) => ({ url: "/api/buys", method: "POST", body }),
       invalidatesTags: [
         { type: "Buys", id: "LIST" },
-        { type: "Currencies", id: "LIST" }, // تحديث قائمة العملات
+        { type: "Currencies", id: "LIST" },
       ],
-      // تحديث أرصدة العملات المحددة
-      async onQueryStarted(_, { dispatch, queryFulfilled }) {
-        try {
-          await queryFulfilled;
-          // إعادة جلب أرصدة العملات بعد نجاح العملية
-          dispatch(
-            currenciesApi.util.invalidateTags([
-              { type: "Currencies", id: "LIST" },
-            ])
-          );
-          
-          // تحديث أرصدة العملات المحددة في العملية
-          const { CarID, PaymentCurrencyID } = _;
-          if (CarID) {
-            dispatch(
-              currenciesApi.util.invalidateTags([
-                { type: "Currency", id: CarID },
-              ])
-            );
-          }
-          if (PaymentCurrencyID) {
-            dispatch(
-              currenciesApi.util.invalidateTags([
-                { type: "Currency", id: PaymentCurrencyID },
-              ])
-            );
-          }
-        } catch {
-          // في حالة الخطأ، لا نحتاج لفعل شيء
-        }
-      },
     }),
 
     updateBuy: build.mutation<Buys, { id: string; data: Partial<Buys> }>({
@@ -94,52 +75,8 @@ export const buysApi = createApi({
       invalidatesTags: (result, _err, id) => [
         { type: "Buys", id }, 
         { type: "Buys", id: "LIST" },
-        { type: "Currencies", id: "LIST" } // تحديث قائمة العملات أيضاً
+        { type: "Currencies", id: "LIST" }
       ],
-      // تحسين التحديث التلقائي مع optimistic update
-      async onQueryStarted(buyId, { dispatch, queryFulfilled, getState }) {
-        // Optimistic update - إزالة المشتريات من جميع استعلامات القائمة
-        const patchResults = [];
-        
-        // تحديث جميع استعلامات listBuys النشطة
-        const state = getState() as any;
-        const buysQueries = state[buysApi.reducerPath]?.queries;
-        
-        if (buysQueries) {
-          Object.keys(buysQueries).forEach(queryKey => {
-            if (queryKey.startsWith('listBuys')) {
-              const patchResult = dispatch(
-                buysApi.util.updateQueryData('listBuys', buysQueries[queryKey].originalArgs, (draft) => {
-                  if (draft?.data) {
-                    draft.data = draft.data.filter(buy => buy.BuyID !== buyId);
-                    draft.total = Math.max(0, draft.total - 1);
-                  }
-                })
-              );
-              patchResults.push(patchResult);
-            }
-          });
-        }
-        
-        try {
-          await queryFulfilled;
-          // إعادة جلب قائمة المشتريات بعد نجاح الحذف للتأكد من التحديث
-          dispatch(
-            buysApi.util.invalidateTags([
-              { type: "Buys", id: "LIST" },
-            ])
-          );
-          // إعادة جلب قائمة العملات بعد نجاح الحذف
-          dispatch(
-            currenciesApi.util.invalidateTags([
-              { type: "Currencies", id: "LIST" },
-            ])
-          );
-        } catch {
-          // في حالة الخطأ، إعادة البيانات الأصلية
-          patchResults.forEach(patchResult => patchResult.undo());
-        }
-      },
     }),
   }),
 });
