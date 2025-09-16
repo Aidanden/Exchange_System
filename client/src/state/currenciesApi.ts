@@ -4,7 +4,7 @@ import { Currency } from "./types";
 export const currenciesApi = createApi({
   reducerPath: "currenciesApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
+    baseUrl: "/api",
     prepareHeaders: (headers) => {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       if (token) {
@@ -18,7 +18,7 @@ export const currenciesApi = createApi({
   keepUnusedDataFor: 120,
   endpoints: (build) => ({
     getCurrencies: build.query<Currency[], void>({
-      query: () => "/api/currencies/currencies",
+      query: () => "/currencies/currencies",
       providesTags: (result) =>
         result
           ? [
@@ -28,12 +28,12 @@ export const currenciesApi = createApi({
           : [{ type: "Currencies", id: "LIST" }],
     }),
     getCurrency: build.query<Currency, string>({
-      query: (carID) => `/api/currencies/currency/${carID}`,
+      query: (carID) => `/currencies/currency/${carID}`,
       providesTags: (_res, _err, id) => [{ type: "Currency", id }],
     }),
     addCurrency: build.mutation<Currency, Partial<Currency>>({
       query: (body) => ({
-        url: "/api/currencies/add-currency",
+        url: "/currencies/add-currency",
         method: "POST",
         body,
       }),
@@ -44,7 +44,7 @@ export const currenciesApi = createApi({
       { carID: string; data: Pick<Currency, "Carrency" | "CarrencyCode"> }
     >({
       query: ({ carID, data }) => ({
-        url: `/api/currencies/update-currency/${carID}`,
+        url: `/currencies/update-currency/${carID}`,
         method: "PUT",
         body: data,
       }),
@@ -55,7 +55,7 @@ export const currenciesApi = createApi({
     }),
     deleteCurrency: build.mutation<void, string>({
       query: (carID) => ({
-        url: `/api/currencies/delete-currency/${carID}`,
+        url: `/currencies/delete-currency/${carID}`,
         method: "DELETE",
       }),
       invalidatesTags: [{ type: "Currencies", id: "LIST" }],
@@ -65,7 +65,7 @@ export const currenciesApi = createApi({
       { carID: string; amount: number }
     >({
       query: ({ carID, amount }) => ({
-        url: `/api/currencies/add-balance/${carID}`,
+        url: `/currencies/add-balance/${carID}`,
         method: "POST",
         body: { amount },
       }),
@@ -80,7 +80,7 @@ export const currenciesApi = createApi({
       { carID: string; newBalance: number }
     >({
       query: ({ carID, newBalance }) => ({
-        url: `/api/currencies/update-balance/${carID}`,
+        url: `/currencies/update-balance/${carID}`,
         method: "PUT",
         body: { newBalance },
       }),

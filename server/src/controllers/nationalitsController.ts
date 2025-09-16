@@ -52,6 +52,7 @@ export const createNationalit = async (req: AuthRequest, res: Response): Promise
         Exist: true,
         UserID: UserID,
       },
+      include: { Categorie: true }, // إضافة العلاقات
     });
 
     res.status(201).json(newNationalit);
@@ -71,6 +72,7 @@ export const updateNationalit = async (req: AuthRequest, res: Response) => {
     const updatedNationalit = await prisma.nationalits.update({
       where: { NatID: id },
       data: { Nationality, CatID, UserID },
+      include: { Categorie: true }, // إضافة العلاقات
     });
     res.json(updatedNationalit);
   } catch (error) {
@@ -83,12 +85,24 @@ export const updateNationalit = async (req: AuthRequest, res: Response) => {
 export const deleteNationalit = async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   try {
-    //await prisma.nationalits.delete({ where: { NatID: id } });
-    const updatedNationalit = await prisma.nationalits.update({
+    // التحقق من وجود السجل أولاً
+    const existingRecord = await prisma.nationalits.findUnique({
+      where: { NatID: id }
+    });
+    
+    if (!existingRecord) {
+      res.status(404).json({ error: "الجنسية غير موجودة" });
+      return;
+    }
+
+    // تحديث حالة الوجود إلى false (soft delete)
+    await prisma.nationalits.update({
       where: { NatID: id },
       data: { Exist: false, UserID: req.user?.id || "admin_user_001" },
     });
-    res.status(204).end();
+    
+    // إرجاع استجابة نجاح مع رسالة
+    res.json({ success: true, message: "تم حذف الجنسية بنجاح" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal server error" });

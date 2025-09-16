@@ -3,12 +3,26 @@ import fs from "fs";
 import path from "path";
 
 async function deleteAllData(orderedFileNames: string[]) {
-  const modelNames = orderedFileNames.map((fileName) => {
-    const modelName = path.basename(fileName, path.extname(fileName));
-    return modelName.charAt(0).toUpperCase() + modelName.slice(1);
-  });
+  // Delete in reverse order to handle foreign key constraints
+  const deletionOrder = [
+    "DebtPayments",
+    "Debts",
+    "CustomerPassportDocuments",
+    "ExpanseAccounts",
+    "ExpenseItems", 
+    "TreasuryMovements",
+    "Sales",
+    "Buys",
+    "Carrences",
+    "Customers",
+    "Nationalits",
+    "UserSessions",
+    "Users",
+    "UserRoles",
+    "Categories"
+  ];
 
-  for (const modelName of modelNames) {
+  for (const modelName of deletionOrder) {
     const model: any = prisma[modelName as keyof typeof prisma];
     if (model) {
       await model.deleteMany({});

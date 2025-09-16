@@ -35,7 +35,7 @@ export interface User {
 export const authApi = createApi({
   reducerPath: "authApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:8000/api",
+    baseUrl: "/api",
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).auth.token || 
                    (typeof window !== 'undefined' ? localStorage.getItem('token') : null);

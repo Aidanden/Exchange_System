@@ -9,11 +9,11 @@ import {
   useDeleteNationalityMutation,
 } from "@/state/nationalitsApi";
 import { Nationality } from "@/state/types";
-import { Users, Plus, Search, Edit2, Trash2, X } from "lucide-react";
+import {Plus} from "lucide-react";
 import { toast, Toaster } from "react-hot-toast";
 
 const Nationalities = () => {
-  const { data: nationalities, isLoading, error, refetch } = useGetNationalitiesQuery();
+  const { data: nationalities, isLoading, error } = useGetNationalitiesQuery();
   const { data: categories, isLoading: categoriesLoading } =
     useGetCategoriesQuery();
   const [addNationality, { isLoading: isAdding, error: addError }] =
@@ -45,7 +45,6 @@ const Nationalities = () => {
       setNewName("");
       setSelectedCategory("");
       toast.success("تمت إضافة الجنسية بنجاح!");
-      refetch();
     } catch (e) {
       console.error("Error adding nationality:", e);
       toast.error("حدث خطأ أثناء إضافة الجنسية.");
@@ -64,7 +63,8 @@ const Nationalities = () => {
     }
 
     try {
-      await updateNationality({
+      console.log("Updating nationality:", currentEditData);
+      const result = await updateNationality({
         NatID: currentEditData.NatID,
         Nationality: currentEditData.Nationality,
         CatID: currentEditData.CatID,
@@ -72,9 +72,9 @@ const Nationalities = () => {
         updatedAt: undefined,
         Categorie: null,
       }).unwrap();
+      console.log("Update result:", result);
       setEditModalOpen(false);
       toast.success("تم التعديل بنجاح!");
-      await refetch();
     } catch (e) {
       console.error("Error updating nationality:", e);
       toast.error("حدث خطأ أثناء التعديل.");
@@ -89,11 +89,11 @@ const Nationalities = () => {
     if (!deletingId) return;
 
     try {
-      await deleteNationality(deletingId).unwrap();
+      console.log("Deleting nationality:", deletingId);
+      const result = await deleteNationality(deletingId).unwrap();
+      console.log("Delete result:", result);
       toast.success("تم حذف الجنسية بنجاح!");
       setDeletingId(null);
-      // إعادة تحميل البيانات فوراً بعد الحذف
-      await refetch();
     } catch (error) {
       console.error("Error deleting nationality:", error);
       toast.error("حدث خطأ أثناء حذف الجنسية.");
