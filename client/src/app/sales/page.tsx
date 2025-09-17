@@ -102,6 +102,10 @@ export default function SalesPage() {
     CustomerType: true,
   });
 
+  // File upload states
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+
   // API hooks
   const { data: currencies, refetch: refetchCurrencies } = useGetCurrenciesQuery();
   const { data: nationalities } = useGetNationalitiesQuery();
@@ -147,6 +151,69 @@ export default function SalesPage() {
     setSearchTerm(customer.Customer);
   };
 
+  // Handle file selection for passport documents
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const validFiles = files.filter(file => {
+      const isValidType = file.type.startsWith('image/') || file.type === 'application/pdf';
+      const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB limit
+      
+      if (!isValidType) {
+        toast.error(`الملف ${file.name} غير مدعوم. يُسمح بالصور و PDF فقط`);
+        return false;
+      }
+      if (!isValidSize) {
+        toast.error(`الملف ${file.name} كبير جداً. الحد الأقصى 10 ميجابايت`);
+        return false;
+      }
+      return true;
+    });
+    
+    setSelectedFiles(prev => [...prev, ...validFiles]);
+  };
+
+  // Remove selected file
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Upload passport documents
+  const uploadPassportDocuments = async (customerId: string) => {
+    if (selectedFiles.length === 0) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    
+    selectedFiles.forEach((file, index) => {
+      formData.append('documents', file);
+    });
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:8000/api/customers/${customerId}/passport-documents`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast.success(`تم رفع ${selectedFiles.length} وثيقة بنجاح!`);
+        setSelectedFiles([]);
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "فشل في رفع الوثائق");
+      }
+    } catch (error) {
+      toast.error("حدث خطأ أثناء رفع الوثائق");
+      console.error(error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   // Handle sale form submission
   const handleSaleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -190,16 +257,27 @@ export default function SalesPage() {
   };
 
   // Handle customer form submission
-  const handleCustomerSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCustomerSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!customerForm.Customer || !customerForm.NatID) {
+      toast.error("الاسم والجنسية مطلوبة");
+      return;
+    }
     
     try {
-      await addCustomer({
+      const result = await addCustomer({
         ...customerForm,
         UserID: "9e2895ae-4afe-4ff2-b3b3-be15cf1c82d6", // Default user ID
       }).unwrap();
       
-      toast.success("تم إضافة العميل بنجاح");
+      const customerId = result.CustID;
+      toast.success("تم إضافة الزبون بنجاح!");
+
+      // Upload passport documents if any
+      if (selectedFiles.length > 0) {
+        await uploadPassportDocuments(customerId);
+      }
+      
       setShowAddCustomer(false);
       setCustomerForm({
         Customer: "",
@@ -210,9 +288,10 @@ export default function SalesPage() {
         Phone: "",
         CustomerType: saleSource === "market",
       });
+      setSelectedFiles([]);
       refetchCustomers();
     } catch (error) {
-      toast.error("حدث خطأ أثناء إضافة العميل");
+      toast.error("حدث خطأ أثناء إضافة الزبون");
       console.error(error);
     }
   };
@@ -462,10 +541,10 @@ export default function SalesPage() {
 
         {/* Add Customer Modal */}
         {showAddCustomer && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[3]">
-            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 py-8 px-4">
+            <div className="bg-white rounded-lg p-6 max-w-4xl w-full mt-8 overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">إضافة عميل جديد</h2>
+                <h2 className="text-xl font-semibold">إضافة زبون</h2>
                 <button
                   onClick={() => setShowAddCustomer(false)}
                   className="text-gray-500 hover:text-gray-700"
@@ -474,123 +553,176 @@ export default function SalesPage() {
                 </button>
               </div>
 
-              <form onSubmit={handleCustomerSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      اسم العميل *
-                    </label>
-                    <input
-                      type="text"
-                      value={customerForm.Customer}
-                      onChange={(e) => setCustomerForm(prev => ({ ...prev, Customer: e.target.value }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    الاسم
+                  </label>
+                  <input
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="الاسم"
+                    value={customerForm.Customer ?? ""}
+                    onChange={(e) => setCustomerForm(prev => ({ ...prev, Customer: e.target.value }))}
+                  />
+                </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      الجنسية *
-                    </label>
-                    <select
-                      value={customerForm.NatID}
-                      onChange={(e) => setCustomerForm(prev => ({ ...prev, NatID: e.target.value }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="">اختر الجنسية</option>
-                      {nationalities?.map((nat: any) => (
-                        <option key={nat.NatID} value={nat.NatID}>
-                          {nat.Nationality}
-                        </option>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    الجنسية
+                  </label>
+                  <select
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={customerForm.NatID ?? ""}
+                    onChange={(e) => setCustomerForm(prev => ({ ...prev, NatID: e.target.value }))}
+                  >
+                    <option value="">اختر الجنسية</option>
+                    {nationalities?.map((nat: any) => (
+                      <option key={nat.NatID} value={nat.NatID}>{nat.Nationality}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    الهاتف
+                  </label>
+                  <input
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="الهاتف"
+                    value={customerForm.Phone ?? ""}
+                    onChange={(e) => setCustomerForm(prev => ({ ...prev, Phone: e.target.value }))}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    العنوان
+                  </label>
+                  <input
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="العنوان"
+                    value={customerForm.Address ?? ""}
+                    onChange={(e) => setCustomerForm(prev => ({ ...prev, Address: e.target.value }))}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    رقم وطني
+                  </label>
+                  <input
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="رقم وطني"
+                    value={customerForm.NationalNumber ?? ""}
+                    onChange={(e) => setCustomerForm(prev => ({ ...prev, NationalNumber: e.target.value }))}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    رقم جواز
+                  </label>
+                  <input
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="رقم جواز"
+                    value={customerForm.passportNumber ?? ""}
+                    onChange={(e) => setCustomerForm(prev => ({ ...prev, passportNumber: e.target.value }))}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    نوع العميل
+                  </label>
+                  <select
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={customerForm.CustomerType === undefined ? "true" : String(customerForm.CustomerType)}
+                    onChange={(e) => setCustomerForm(prev => ({ ...prev, CustomerType: e.target.value === "true" }))}
+                  >
+                    <option value="true">السوق</option>
+                    <option value="false">مصرف ليبيا المركزي</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Passport Documents Upload Section */}
+              <div className="border-t pt-6 mt-6">
+                <h3 className="text-lg font-semibold mb-4 text-gray-800">وثائق جواز السفر</h3>
+                
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    رفع وثائق جواز السفر (صور أو PDF)
+                  </label>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*,.pdf"
+                    onChange={handleFileSelect}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    يمكنك رفع عدة ملفات (صور أو PDF). الحد الأقصى لحجم الملف: 10 ميجابايت
+                  </p>
+                </div>
+
+                {/* Selected Files Preview */}
+                {selectedFiles.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">الملفات المحددة:</h4>
+                    <div className="space-y-2">
+                      {selectedFiles.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            <div className="flex-shrink-0">
+                              {file.type.startsWith('image/') ? (
+                                <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              ) : (
+                                <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
+                              <p className="text-xs text-gray-500">
+                                {(file.size / 1024 / 1024).toFixed(2)} MB
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeFile(index)}
+                            className="text-red-500 hover:text-red-700 p-1"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
                       ))}
-                    </select>
+                    </div>
                   </div>
+                )}
+              </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      رقم جواز السفر
-                    </label>
-                    <input
-                      type="text"
-                      value={customerForm.passportNumber}
-                      onChange={(e) => setCustomerForm(prev => ({ ...prev, passportNumber: e.target.value }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-
-
-
-
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      الرقم الوطني
-                    </label>
-                    <input
-                      type="text"
-                      value={customerForm.NationalNumber}
-                      onChange={(e) => setCustomerForm(prev => ({ ...prev, NationalNumber: e.target.value }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      العنوان
-                    </label>
-                    <input
-                      type="text"
-                      value={customerForm.Address}
-                      onChange={(e) => setCustomerForm(prev => ({ ...prev, Address: e.target.value }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      رقم الهاتف
-                    </label>
-                    <input
-                      type="text"
-                      value={customerForm.Phone}
-                      onChange={(e) => setCustomerForm(prev => ({ ...prev, Phone: e.target.value }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      نوع العميل
-                    </label>
-                    <select
-                      value={customerForm.CustomerType.toString()}
-                      onChange={(e) => setCustomerForm(prev => ({ ...prev, CustomerType: e.target.value === "true" }))}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="true">سوق</option>
-                      <option value="false">مصرف مركزي</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex gap-4 pt-4">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    إضافة العميل
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowAddCustomer(false)}
-                    className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition-colors"
-                  >
-                    إلغاء
-                  </button>
-                </div>
-              </form>
+              <div className="flex gap-4 pt-4">
+                <button
+                  type="button"
+                  onClick={handleCustomerSubmit}
+                  className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  حفظ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddCustomer(false)}
+                  className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition-colors"
+                >
+                  إلغاء
+                </button>
+              </div>
             </div>
           </div>
         )}

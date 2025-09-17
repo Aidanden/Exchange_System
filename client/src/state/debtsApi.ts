@@ -77,12 +77,11 @@ export const debtsApi = createApi({
       if (token) {
         headers.set('Authorization', `Bearer ${token}`);
       }
-      headers.set('Cache-Control', 'max-age=30');
       return headers;
     },
   }),
-  tagTypes: ["Debt", "Currency", "Treasury"],
-  keepUnusedDataFor: 60,
+  tagTypes: ["Debt", "Currencies", "Currency", "Treasury", "TreasuryMovement"],
+  keepUnusedDataFor: 0,
   endpoints: (build) => ({
     // Create a new debt
     createDebt: build.mutation<{ message: string; data: Debt }, CreateDebtRequest>({
@@ -91,7 +90,7 @@ export const debtsApi = createApi({
         method: "POST",
         body: debt,
       }),
-      invalidatesTags: ["Debt", "Currency", "Treasury"],
+      invalidatesTags: ["Debt", "Currencies", "Currency", "Treasury", "TreasuryMovement"],
     }),
 
     // List debts with filters and pagination
@@ -125,7 +124,7 @@ export const debtsApi = createApi({
         method: "POST",
         body: data,
       }),
-      invalidatesTags: ["Debt", "Currency", "Treasury"],
+      invalidatesTags: ["Debt", "Currencies", "Currency", "Treasury", "TreasuryMovement"],
     }),
 
     // Delete debt

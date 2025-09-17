@@ -14,7 +14,7 @@ export const currenciesApi = createApi({
     },
   }),
   tagTypes: ["Currencies", "Currency"],
-  keepUnusedDataFor: 5,
+  keepUnusedDataFor: 0,
   endpoints: (build) => ({
     getCurrencies: build.query<Currency[], void>({
       query: () => "/currencies/currencies",

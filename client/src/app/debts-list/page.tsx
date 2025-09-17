@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useListDebtsQuery, useAddDebtPaymentMutation, useDeleteDebtMutation } from "@/state/debtsApi";
+import { useGetCurrenciesQuery } from "@/state/currenciesApi";
 import { toast, Toaster } from "react-hot-toast";
 import { formatNumber } from "@/utils/formatNumber";
 
@@ -28,6 +29,7 @@ export default function DebtsListPage() {
     debtType: typeFilter as any,
   });
 
+  const { refetch: refetchCurrencies } = useGetCurrenciesQuery();
   const [addDebtPayment, { isLoading: isUpdating }] = useAddDebtPaymentMutation();
   const [deleteDebt, { isLoading: isDeleting }] = useDeleteDebtMutation();
 
@@ -69,6 +71,10 @@ export default function DebtsListPage() {
 
       toast.success(`تم ${repayingDebt.DebtType === "TAKEN" ? "سداد الدين" : "استلام الدين"} بنجاح`);
       setRepayingDebt(null);
+      
+      // Force immediate currency refetch to update balances
+      await refetchCurrencies();
+      
       setTimeout(async () => {
         await refetch();
       }, 500);

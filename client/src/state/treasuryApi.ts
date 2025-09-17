@@ -52,11 +52,11 @@ export const treasuryApi = createApi({
       if (token) {
         headers.set('Authorization', `Bearer ${token}`);
       }
-      headers.set('Cache-Control', 'max-age=30');
       return headers;
     },
   }),
   tagTypes: ["TreasuryMovement"],
+  keepUnusedDataFor: 0,
   endpoints: (build) => ({
     // List treasury movements with filters and pagination
     listTreasuryMovements: build.query<TreasuryMovementsListResponse, {

@@ -29,7 +29,7 @@ export default function DebtsPage() {
   });
 
   // API hooks
-  const { data: currencies } = useGetCurrenciesQuery();
+  const { data: currencies, refetch: refetchCurrencies } = useGetCurrenciesQuery();
   const [createDebt, { isLoading }] = useCreateDebtMutation();
 
   // Helper function to parse formatted number input
@@ -92,6 +92,9 @@ export default function DebtsPage() {
       console.log("Sending debt data:", JSON.stringify(debtData, null, 2));
       
       await createDebt(debtData).unwrap();
+      
+      // Force immediate currency refetch to update balances
+      await refetchCurrencies();
       
       toast.success(`تم تسجيل ${debtForm.DebtType === "TAKEN" ? "الاستذانة" : "الإقراض"} بنجاح`);
       

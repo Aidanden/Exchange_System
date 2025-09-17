@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useListBuysQuery, useDeleteBuyMutation } from "@/state/buysApi";
-
+import { useGetCurrenciesQuery } from "@/state/currenciesApi";
+import { useListCustomersQuery } from "@/state/customersApi";
 import { Decimal } from "decimal.js";
 import { toast, Toaster } from "react-hot-toast";
 import { formatNumber, formatBalance } from "@/utils/formatNumber";
+import { Search, Filter } from "lucide-react";
 
 // Helper function to format numbers with commas
 const formatNumberWithCommas = (value: any): string => {
@@ -17,41 +19,52 @@ const formatNumberWithCommas = (value: any): string => {
   });
 };
 
-
-
 export default function BuysListPage() {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState("");
+  // Get all buys without pagination for client-side filtering (like customers)
+  const { data: allBuysData, isFetching, refetch } = useListBuysQuery({ page: 1, limit: 1000, search: "" });
+  const { data: currencies, isLoading: currenciesLoading } = useGetCurrenciesQuery();
+  const { data: customersData, isLoading: customersLoading } = useListCustomersQuery({ page: 1, limit: 1000, search: "" });
+  const [deleteBuy, { isLoading: isDeleting }] = useDeleteBuyMutation();
+  
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCurrency, setSelectedCurrency] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
   const [deletingBuy, setDeletingBuy] = useState<any>(null);
 
-  // API hooks
-  const { 
-    data: buysData, 
-    isLoading, 
-    error, 
-    refetch 
-  } = useListBuysQuery({
-    page: currentPage,
-    limit: 20,
-    search: searchTerm,
-  });
+  const allBuys = allBuysData?.data ?? [];
+  const allCustomers = customersData?.data ?? [];
 
-  const [deleteBuy] = useDeleteBuyMutation();
+  // Filter buys based on search query, currency, and customer (exactly like customers)
+  const filteredBuys = useMemo(() => {
+    if (!allBuys) return [];
+    
+    return allBuys.filter((buy) => {
+      const matchesSearch = !searchQuery || 
+        buy.BillNum?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        buy.Customer?.Customer?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        buy.Customer?.NationalNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        buy.Customer?.Phone?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesCurrency = !selectedCurrency || buy.CarID === selectedCurrency;
+      const matchesCustomer = !selectedCustomer || buy.CustID === selectedCustomer;
+      
+      return matchesSearch && matchesCurrency && matchesCustomer;
+    });
+  }, [allBuys, searchQuery, selectedCurrency, selectedCustomer]);
 
-  // إعادة تعيين الصفحة إلى 1 عند تغيير البحث
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
+  // Paginate filtered results
+  const totalPages = Math.ceil(filteredBuys.length / limit);
+  const startIndex = (page - 1) * limit;
+  const rows = filteredBuys.slice(startIndex, startIndex + limit);
 
-  // إعادة تحميل البيانات عند تغيير الصفحة
-  useEffect(() => {
-    refetch();
-  }, [currentPage, refetch]);
-
-  // إعادة تحميل البيانات عند تغيير البحث
-  useEffect(() => {
-    refetch();
-  }, [searchTerm, refetch]);
+  const clearFilters = () => {
+    setSearchQuery("");
+    setSelectedCurrency("");
+    setSelectedCustomer("");
+    setPage(1);
+  };
 
 
 
@@ -84,20 +97,10 @@ export default function BuysListPage() {
     return `${year}-${month}-${day}`;
   };
 
-  // استخدام دالة التنسيق المشتركة من utils
-
-  if (isLoading) {
+  if (isFetching || currenciesLoading || customersLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-lg">جاري تحميل البيانات...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg text-red-600">حدث خطأ في تحميل البيانات</div>
       </div>
     );
   }
@@ -111,20 +114,78 @@ export default function BuysListPage() {
           <p className="text-gray-600">عرض وإدارة عمليات الشراء</p>
         </div>
 
-        {/* Search and Controls */}
+        {/* Search and Filter Controls */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <div className="flex-1 max-w-md">
+          <div className="flex items-center gap-2 mb-4">
+            <Search className="w-5 h-5 text-blue-600" />
+            <h2 className="text-xl font-semibold text-gray-700">البحث والفلترة</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+            {/* Search Input */}
+            <div className="lg:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                البحث
+              </label>
               <input
                 type="text"
-                placeholder="البحث برقم الفاتورة أو اسم العميل..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="البحث برقم الفاتورة / اسم العميل / الهاتف..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
+            
+            {/* Currency Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                العملة
+              </label>
+              <select
+                value={selectedCurrency}
+                onChange={(e) => setSelectedCurrency(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg bg-white text-sm text-black outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              >
+                <option value="">جميع العملات</option>
+                {currencies?.map((currency) => (
+                  <option key={currency.CarID} value={currency.CarID}>
+                    {currency.Carrency} ({currency.CarrencyCode})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Customer Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                العميل
+              </label>
+              <select
+                value={selectedCustomer}
+                onChange={(e) => setSelectedCustomer(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg bg-white text-sm text-black outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              >
+                <option value="">جميع العملاء</option>
+                {allCustomers?.map((customer) => (
+                  <option key={customer.CustID} value={customer.CustID}>
+                    {customer.Customer}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          <div className="flex justify-between items-center mt-4">
+            <button
+              onClick={clearFilters}
+              className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-2"
+            >
+              <Filter className="w-4 h-4" />
+              مسح الفلاتر
+            </button>
+            
             <div className="text-sm text-gray-600">
-              إجمالي النتائج: {buysData?.total || 0}
+              عدد النتائج: {filteredBuys.length} من أصل {allBuys.length || 0}
             </div>
           </div>
         </div>
@@ -162,7 +223,7 @@ export default function BuysListPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {buysData?.data?.map((buy) => (
+                {rows.map((buy: any) => (
                   <tr key={buy.BuyID} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {buy.BillNum}
@@ -204,37 +265,39 @@ export default function BuysListPage() {
             </table>
           </div>
 
-          {/* Pagination */}
-          {buysData && buysData.totalPages > 1 && (
-            <div className="bg-white px-6 py-3 border-t border-gray-200 flex items-center justify-between">
-              <div className="flex items-center">
-                <span className="text-sm text-gray-700">
-                  صفحة {currentPage} من {buysData.totalPages}
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  السابق
-                </button>
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, buysData.totalPages))}
-                  disabled={currentPage === buysData.totalPages}
-                  className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  التالي
-                </button>
+          {/* Empty State */}
+          {rows.length === 0 && (
+            <div className="text-center py-8">
+              <div className="text-gray-500">
+                {searchQuery || selectedCurrency || selectedCustomer ? "لا توجد نتائج تطابق البحث" : "لا توجد عمليات شراء"}
               </div>
             </div>
           )}
 
-          {/* Empty State */}
-          {buysData?.data?.length === 0 && (
-            <div className="text-center py-8">
-              <div className="text-gray-500">لا توجد عمليات شراء</div>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="bg-white px-6 py-3 border-t border-gray-200 flex items-center justify-between">
+              <div className="flex items-center">
+                <span className="text-sm text-gray-700">
+                  صفحة {page} من {totalPages}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  disabled={page <= 1}
+                  className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  السابق
+                </button>
+                <button
+                  disabled={page >= totalPages}
+                  className="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  التالي
+                </button>
+              </div>
             </div>
           )}
         </div>
