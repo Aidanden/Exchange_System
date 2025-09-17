@@ -12,7 +12,7 @@ type ListResponse = {
 
 export const buysApi = createApi({
   baseQuery: fetchBaseQuery({ 
-    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
+    baseUrl: "http://localhost:8000/api",
     prepareHeaders: (headers) => {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       if (token) {
@@ -36,7 +36,7 @@ export const buysApi = createApi({
         if (args?.search) params.set("search", args.search);
         if (args?.custId) params.set("custId", args.custId);
         if (typeof args?.exist === "boolean") params.set("exist", String(args.exist));
-        return `/api/buys?${params.toString()}`;
+        return `/buys?${params.toString()}`;
       },
       providesTags: (result) =>
         result?.data
@@ -49,12 +49,12 @@ export const buysApi = createApi({
     }),
 
     getBuy: build.query<Buys, string>({
-      query: (id) => `/api/buys/${id}`,
+      query: (id) => `/buys/${id}`,
       providesTags: (result, _err, id) => [{ type: "Buys", id }],
     }),
 
     createBuy: build.mutation<Buys, Partial<Buys> & { PaymentCurrencyID: string }>({
-      query: (body) => ({ url: "/api/buys", method: "POST", body }),
+      query: (body) => ({ url: "/buys", method: "POST", body }),
       invalidatesTags: [
         { type: "Buys", id: "LIST" },
         { type: "Currencies", id: "LIST" },
@@ -62,7 +62,7 @@ export const buysApi = createApi({
     }),
 
     updateBuy: build.mutation<Buys, { id: string; data: Partial<Buys> }>({
-      query: ({ id, data }) => ({ url: `/api/buys/${id}`, method: "PUT", body: data }),
+      query: ({ id, data }) => ({ url: `/buys/${id}`, method: "PUT", body: data }),
       invalidatesTags: (result, _err, { id }) => [
         { type: "Buys", id },
         { type: "Buys", id: "LIST" },
@@ -71,7 +71,7 @@ export const buysApi = createApi({
     }),
 
     deleteBuy: build.mutation<void, string>({
-      query: (BuyID) => ({ url: `/api/buys/${BuyID}`, method: "DELETE" }),
+      query: (BuyID) => ({ url: `/buys/${BuyID}`, method: "DELETE" }),
       invalidatesTags: (result, _err, id) => [
         { type: "Buys", id }, 
         { type: "Buys", id: "LIST" },

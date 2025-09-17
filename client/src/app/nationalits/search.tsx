@@ -2,9 +2,8 @@
 
 import React, { useState, useMemo } from "react";
 import { useGetNationalitiesQuery, useGetCategoriesQuery } from "@/state/nationalitsApi";
-import { Nationality } from "@/state/types";
 import { Search, Filter } from "lucide-react";
-import { toast, Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
 
 const SearchPage = () => {
   const { data: nationalities, isLoading, error } = useGetNationalitiesQuery();

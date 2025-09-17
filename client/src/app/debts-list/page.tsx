@@ -69,8 +69,9 @@ export default function DebtsListPage() {
 
       toast.success(`تم ${repayingDebt.DebtType === "TAKEN" ? "سداد الدين" : "استلام الدين"} بنجاح`);
       setRepayingDebt(null);
-      setRepaymentAmount("");
-      refetch();
+      setTimeout(async () => {
+        await refetch();
+      }, 500);
     } catch (error: any) {
       // Extract meaningful error message from RTK Query error object
       const errorMessage = error?.data?.message || error?.message || "حدث خطأ أثناء معالجة العملية";
@@ -436,6 +437,9 @@ export default function DebtsListPage() {
                   onClick={() => {
                     setRepayingDebt(null);
                     setRepaymentAmount("");
+                    setTimeout(async () => {
+                      await refetch();
+                    }, 500);
                   }}
                   disabled={isUpdating}
                   className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-400 transition-colors disabled:opacity-50"

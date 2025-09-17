@@ -4,18 +4,17 @@ import { Currency } from "./types";
 export const currenciesApi = createApi({
   reducerPath: "currenciesApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "/api",
+    baseUrl: "http://localhost:8000/api",
     prepareHeaders: (headers) => {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       if (token) {
         headers.set('Authorization', `Bearer ${token}`);
       }
-      headers.set('Cache-Control', 'max-age=60');
       return headers;
     },
   }),
   tagTypes: ["Currencies", "Currency"],
-  keepUnusedDataFor: 120,
+  keepUnusedDataFor: 5,
   endpoints: (build) => ({
     getCurrencies: build.query<Currency[], void>({
       query: () => "/currencies/currencies",
@@ -38,6 +37,13 @@ export const currenciesApi = createApi({
         body,
       }),
       invalidatesTags: [{ type: "Currencies", id: "LIST" }],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          // Force immediate refetch
+          dispatch(currenciesApi.util.invalidateTags([{ type: "Currencies", id: "LIST" }]));
+        } catch {}
+      },
     }),
     updateCurrency: build.mutation<
       Currency,
@@ -52,6 +58,12 @@ export const currenciesApi = createApi({
         { type: "Currency", id: carID },
         { type: "Currencies", id: "LIST" },
       ],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(currenciesApi.util.invalidateTags([{ type: "Currencies", id: "LIST" }]));
+        } catch {}
+      },
     }),
     deleteCurrency: build.mutation<void, string>({
       query: (carID) => ({
@@ -59,6 +71,12 @@ export const currenciesApi = createApi({
         method: "DELETE",
       }),
       invalidatesTags: [{ type: "Currencies", id: "LIST" }],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(currenciesApi.util.invalidateTags([{ type: "Currencies", id: "LIST" }]));
+        } catch {}
+      },
     }),
     addCurrencyBalance: build.mutation<
       { message: string },
@@ -73,6 +91,12 @@ export const currenciesApi = createApi({
         { type: "Currency", id: carID },
         { type: "Currencies", id: "LIST" },
       ],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(currenciesApi.util.invalidateTags([{ type: "Currencies", id: "LIST" }]));
+        } catch {}
+      },
     }),
 
     updateCurrencyBalance: build.mutation<

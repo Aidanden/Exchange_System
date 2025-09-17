@@ -5,7 +5,6 @@ import { AuthRequest } from "../middleware/auth";
 import { randomUUID } from "crypto";
 
 // إضافة عملة جديدة
-
 export const addCurrency = async (
   req: AuthRequest,
   res: Response
@@ -23,12 +22,11 @@ export const addCurrency = async (
       return;
     }
 
-    // استخدام معاملة Prisma
+    // إنشاء العملة مباشرة
     const result = await prisma.carrences.create({
       data: {
         Carrency,
         CarrencyCode: CarrencyCode ?? "",
-        // الرصيد عند إنشاء العملة يكون دائماً 0
         Balance: new Decimal(0),
         UserID: UserID,
         Exist: true,
@@ -36,7 +34,7 @@ export const addCurrency = async (
     });
 
     res.status(201).json({
-      message: "تمت إضافة العملة وتحديث الأسعار المرتبطة بنجاح!",
+      message: "تمت إضافة العملة بنجاح!",
       newCurrency: result,
     });
   } catch (error) {
@@ -54,15 +52,13 @@ export const updateCurrency = async (
 ): Promise<void> => {
   try {
     const { carID } = req.params;
-    const { Carrency, CarrencyCode } = req.body; // تجاهل أي محاولة لتعديل الرصيد
+    const { Carrency, CarrencyCode } = req.body;
 
-    // تحديث سجل العملة
     const updatedCurrency = await prisma.carrences.update({
       where: { CarID: carID },
       data: {
         Carrency,
         CarrencyCode: CarrencyCode ?? "",
-        // لا نسمح بتعديل الرصيد عبر هذا المسار
       },
     });
 
@@ -119,11 +115,13 @@ export const deleteCurrency = async (
 // عرض جدول العملات كامل
 export const getCurrencies = async (req: Request, res: Response) => {
   try {
-    // استعلام عن جميع العملات
     const currencies = await prisma.carrences.findMany({
       where: {
         Exist: true,
       },
+      orderBy: {
+        CreatedAt: 'desc'
+      }
     });
     res.status(200).json(currencies);
   } catch (error) {
@@ -192,40 +190,43 @@ export const addCurrencyBalance = async (
       return;
     }
 
-    // إجراء معاملة: تحديث رصيد العملة وتسجيل حركة الخزينة
-    const result = await prisma.$transaction(async (tx) => {
-      const openBalance = current.Balance;
-      const debit = new Decimal(amount);
-      const credit = new Decimal(0);
-      const finalBalance = openBalance.plus(debit);
+    // تحديث الرصيد أولاً للاستجابة السريعة
+    const openBalance = current.Balance;
+    const debit = new Decimal(amount);
+    const finalBalance = openBalance.plus(debit);
 
-      const updatedCurrency = await tx.carrences.update({
-        where: { CarID: carID },
-        data: { Balance: finalBalance },
-      });
-
-      const treasuryMovement = await tx.treasuryMovements.create({
-        data: {
-          TreaMoveID: randomUUID(),
-          CarID: carID,
-          OpenBalance: openBalance,
-          Cridit: credit,
-          Debit: debit,
-          FinalBalance: finalBalance,
-          UserID: current.UserID,
-          Exist: true,
-          Statment: "تم اضافة رصيد من شاشة إدارة العملات",
-          // ملاحظة: لا يوجد حقل للملاحظة/البيان في النموذج حاليًا
-        } as any,
-      });
-
-      return { updatedCurrency, treasuryMovement };
+    const updatedCurrency = await prisma.carrences.update({
+      where: { CarID: carID },
+      data: { Balance: finalBalance },
     });
 
+    // إرسال الاستجابة فوراً
     res.status(200).json({
-      message: "تمت إضافة الرصيد وتسجيل الحركة بنجاح.",
-      ...result,
+      message: "تمت إضافة الرصيد بنجاح.",
+      updatedCurrency,
     });
+
+    // تسجيل حركة الخزينة في الخلفية (لا ننتظرها)
+    setImmediate(async () => {
+      try {
+        await prisma.treasuryMovements.create({
+          data: {
+            TreaMoveID: randomUUID(),
+            CarID: carID,
+            OpenBalance: openBalance,
+            Cridit: new Decimal(0),
+            Debit: debit,
+            FinalBalance: finalBalance,
+            UserID: current.UserID,
+            Exist: true,
+            Statment: "تم اضافة رصيد من شاشة إدارة العملات",
+          } as any,
+        });
+      } catch (error) {
+        console.error("Error creating treasury movement:", error);
+      }
+    });
+
   } catch (error) {
     console.error("Error adding balance:", error);
     res.status(500).json({ error: "حدث خطأ أثناء إضافة الرصيد." });

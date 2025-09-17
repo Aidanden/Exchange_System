@@ -12,7 +12,7 @@ type ListResponse = {
 
 export const salesApi = createApi({
   baseQuery: fetchBaseQuery({ 
-    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
+    baseUrl: "http://localhost:8000/api",
     prepareHeaders: (headers) => {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       if (token) {
@@ -36,7 +36,7 @@ export const salesApi = createApi({
         if (args?.search) params.set("search", args.search);
         if (args?.custId) params.set("custId", args.custId);
         if (typeof args?.exist === "boolean") params.set("exist", String(args.exist));
-        return `/api/sales?${params.toString()}`;
+        return `/sales?${params.toString()}`;
       },
       providesTags: (result) =>
         result?.data
@@ -48,12 +48,12 @@ export const salesApi = createApi({
     }),
 
     getSale: build.query<Sales, string>({
-      query: (id) => `/api/sales/${id}`,
+      query: (id) => `/sales/${id}`,
       providesTags: (result, _err, id) => [{ type: "Sales", id }],
     }),
 
     createSale: build.mutation<Sales, Partial<Sales> & { PaymentCurrencyID: string }>({
-      query: (body) => ({ url: "/api/sales", method: "POST", body }),
+      query: (body) => ({ url: "/sales", method: "POST", body }),
       invalidatesTags: [
         { type: "Sales", id: "LIST" },
         { type: "Currencies", id: "LIST" },
@@ -61,7 +61,7 @@ export const salesApi = createApi({
     }),
 
     updateSale: build.mutation<Sales, { id: string; data: Partial<Sales> }>({
-      query: ({ id, data }) => ({ url: `/api/sales/${id}`, method: "PUT", body: data }),
+      query: ({ id, data }) => ({ url: `/sales/${id}`, method: "PUT", body: data }),
       invalidatesTags: (result, _err, { id }) => [
         { type: "Sales", id },
         { type: "Sales", id: "LIST" },
@@ -70,7 +70,7 @@ export const salesApi = createApi({
     }),
 
     deleteSale: build.mutation<void, string>({
-      query: (SaleID) => ({ url: `/api/sales/${SaleID}`, method: "DELETE" }),
+      query: (SaleID) => ({ url: `/sales/${SaleID}`, method: "DELETE" }),
       invalidatesTags: (result, _err, id) => [
         { type: "Sales", id }, 
         { type: "Sales", id: "LIST" },

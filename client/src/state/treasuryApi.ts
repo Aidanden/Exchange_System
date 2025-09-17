@@ -46,7 +46,7 @@ export interface TreasuryMovementsListResponse {
 export const treasuryApi = createApi({
   reducerPath: "treasuryApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
+    baseUrl: "http://localhost:8000/api",
     prepareHeaders: (headers) => {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       if (token) {

@@ -14,10 +14,7 @@ import { toast, Toaster } from "react-hot-toast";
 import Modal from "../../components/Modal";
 
 const CurrencyList = () => {
-  const { data: currencies, isLoading, error, refetch } = useGetCurrenciesQuery(undefined, {
-    refetchOnMountOrArgChange: true,
-    pollingInterval: 30000, // إعادة تحميل كل 30 ثانية
-  });
+  const { data: currencies, isLoading, error } = useGetCurrenciesQuery();
   const [addCurrency, { isLoading: isAdding, error: addError }] = useAddCurrencyMutation();
   const [updateCurrency] = useUpdateCurrencyMutation();
   const [deleteCurrency] = useDeleteCurrencyMutation();
@@ -99,7 +96,6 @@ const CurrencyList = () => {
       setNewCurrencyName("");
       setNewCurrencyCode("");
       toast.success("تمت إضافة العملة بنجاح!");
-      refetch();
     } catch (e: any) {
       toast.error(e?.data?.error || "حدث خطأ أثناء إضافة العملة.");
     }
@@ -126,7 +122,6 @@ const CurrencyList = () => {
       }).unwrap();
       setEditModalOpen(false);
       toast.success("تم التعديل بنجاح!");
-      refetch();
     } catch (e: any) {
       console.error("Error updating currency:", e);
       toast.error(e?.data?.error || "حدث خطأ أثناء التعديل.");
@@ -144,7 +139,6 @@ const CurrencyList = () => {
       await deleteCurrency(deletingId).unwrap();
       toast.success("تم حذف العملة بنجاح!");
       setDeletingId(null);
-      refetch();
     } catch (e: any) {
       console.error("Error deleting currency:", e);
       const msg = e?.data?.message || e?.data?.error || e?.error || "حدث خطأ أثناء حذف العملة.";
@@ -174,7 +168,6 @@ const CurrencyList = () => {
       await addCurrencyBalance({ carID: balanceCarID, amount }).unwrap();
       setBalanceModalOpen(false);
       toast.success("تمت إضافة الرصيد وتسجيل الحركة.");
-      refetch();
     } catch (e: any) {
       console.error(e);
       toast.error(e?.data?.error || e?.error || "تعذر إضافة الرصيد.");

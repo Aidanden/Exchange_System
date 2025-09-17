@@ -12,13 +12,12 @@ type ListResponse = {
 export const customersApi = createApi({
   reducerPath: "customersApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
+    baseUrl: "http://localhost:8000/api",
     prepareHeaders: (headers) => {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       if (token) {
         headers.set('Authorization', `Bearer ${token}`);
       }
-      headers.set('Cache-Control', 'max-age=60');
       return headers;
     },
   }),
@@ -36,7 +35,7 @@ export const customersApi = createApi({
         if (args?.natId) params.set("natId", args.natId);
         if (typeof args?.exist === "boolean") params.set("exist", String(args.exist));
         if (typeof args?.customerType === "boolean") params.set("customerType", String(args.customerType));
-        return `/api/customers?${params.toString()}`;
+        return `/customers?${params.toString()}&includePassportDocuments=true`;
       },
       providesTags: (result) =>
         result?.data
@@ -48,22 +47,22 @@ export const customersApi = createApi({
     }),
 
     getCustomer: build.query<Customers, string>({
-      query: (id) => `/api/customers/${id}`,
+      query: (id) => `/customers/${id}`,
       providesTags: (result, _err, id) => [{ type: "Customers", id }],
     }),
 
     addCustomer: build.mutation<Customers, Partial<Customers>>({
-      query: (body) => ({ url: "/api/customers", method: "POST", body }),
+      query: (body) => ({ url: "/customers", method: "POST", body }),
       invalidatesTags: [{ type: "Customers", id: "LIST" }],
     }),
 
     updateCustomer: build.mutation<Customers, Partial<Customers> & { CustID: string }>({
-      query: ({ CustID, ...body }) => ({ url: `/api/customers/${CustID}`, method: "PUT", body }),
+      query: ({ CustID, ...body }) => ({ url: `/customers/${CustID}`, method: "PUT", body }),
       invalidatesTags: (result, _err, arg) => [{ type: "Customers", id: arg.CustID }, { type: "Customers", id: "LIST" }],
     }),
 
     deleteCustomer: build.mutation<void, string>({
-      query: (CustID) => ({ url: `/api/customers/${CustID}`, method: "DELETE" }),
+      query: (CustID) => ({ url: `/customers/${CustID}`, method: "DELETE" }),
       invalidatesTags: (result, _err, id) => [{ type: "Customers", id }, { type: "Customers", id: "LIST" }],
     }),
   }),

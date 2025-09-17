@@ -1,19 +1,53 @@
 "use client";
-import { useMemo, useState } from "react";
+
+import React, { useState, useEffect, useMemo } from "react";
 import { useListCustomersQuery, useDeleteCustomerMutation, useAddCustomerMutation, useUpdateCustomerMutation } from "@/state/customersApi";
 import { useGetNationalitiesQuery } from "@/state/nationalitsApi";
 import { Customers, Nationality } from "@/state/types";
+import { Search, Filter } from "lucide-react";
 import { toast, Toaster } from "react-hot-toast";
 
 export default function CustomersPage() {
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
-  const [search, setSearch] = useState("");
-  const { data, isFetching, refetch } = useListCustomersQuery({ page, limit, search });
+  // Get all customers without pagination for client-side filtering (like nationalities)
+  const { data: allCustomersData, isFetching, refetch } = useListCustomersQuery({ page: 1, limit: 1000, search: "" });
+  const { data: nationalities, isLoading: nationalitiesLoading } = useGetNationalitiesQuery();
   const [deleteCustomer, { isLoading: isDeleting }] = useDeleteCustomerMutation();
+  
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedNationality, setSelectedNationality] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
 
-  const rows = data?.data ?? [];
-  const totalPages = data?.totalPages ?? 1;
+  const allCustomers = allCustomersData?.data ?? [];
+
+  // Filter customers based on search query, nationality, and customer type (exactly like nationalities)
+  const filteredCustomers = useMemo(() => {
+    if (!allCustomers) return [];
+    
+    return allCustomers.filter((customer) => {
+      const matchesSearch = !searchQuery || 
+        customer.Customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (customer.Phone && customer.Phone.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (customer.Address && customer.Address.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (customer.NationalNumber && customer.NationalNumber.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (customer.passportNumber && customer.passportNumber.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      const matchesNationality = !selectedNationality || customer.NatID === selectedNationality;
+      
+      return matchesSearch && matchesNationality;
+    });
+  }, [allCustomers, searchQuery, selectedNationality]);
+
+  // Paginate filtered results
+  const totalPages = Math.ceil(filteredCustomers.length / limit);
+  const startIndex = (page - 1) * limit;
+  const rows = filteredCustomers.slice(startIndex, startIndex + limit);
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setSelectedNationality("");
+    setPage(1);
+  };
 
   const handleDelete = async (cust: Customers) => {
     setDeletingCustomer(cust);
@@ -37,7 +71,16 @@ export default function CustomersPage() {
 
   const [deletingCustomer, setDeletingCustomer] = useState<Customers | null>(null);
 
-  if (isFetching && page === 1) {
+  // Listen for refresh events from document operations
+  useEffect(() => {
+    const handler = () => {
+      refetch();
+    };
+    window.addEventListener("refresh-customers-list", handler);
+    return () => window.removeEventListener("refresh-customers-list", handler);
+  }, [refetch]);
+
+  if (isFetching || nationalitiesLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-lg">جاري تحميل البيانات...</div>
@@ -54,24 +97,61 @@ export default function CustomersPage() {
           <p className="text-gray-600">عرض وإدارة الزبائن المسجلين</p>
         </div>
 
-        {/* Search and Controls */}
+        {/* Search and Filter Controls */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <div className="flex-1 max-w-md">
+          <div className="flex items-center gap-2 mb-4">
+            <Search className="w-5 h-5 text-blue-600" />
+            <h2 className="text-xl font-semibold text-gray-700">البحث والفلترة</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
+            {/* Search Input */}
+            <div className="lg:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                البحث
+              </label>
               <input
                 type="text"
-                placeholder="البحث بالاسم / الهاتف / العنوان..."
-                value={search}
-                onChange={(e) => {
-                  setPage(1);
-                  setSearch(e.target.value);
-                }}
+                placeholder="البحث بالاسم / الهاتف / العنوان / رقم جواز..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            <div className="text-sm text-gray-600">
-              إجمالي النتائج: {data?.total || 0}
+            
+            {/* Nationality Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                الجنسية
+              </label>
+              <select
+                value={selectedNationality}
+                onChange={(e) => setSelectedNationality(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg bg-white text-sm text-black outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              >
+                <option value="">جميع الجنسيات</option>
+                {nationalities?.map((nationality: Nationality) => (
+                  <option key={nationality.NatID} value={nationality.NatID}>
+                    {nationality.Nationality}
+                  </option>
+                ))}
+              </select>
             </div>
+          </div>
+          
+          <div className="flex justify-between items-center mt-4">
+            <button
+              onClick={clearFilters}
+              className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-2"
+            >
+              <Filter className="w-4 h-4" />
+              مسح الفلاتر
+            </button>
+            
+            <div className="text-sm text-gray-600">
+              عدد النتائج: {filteredCustomers.length} من أصل {allCustomers.length || 0}
+            </div>
+            
             <button
               className="px-6 py-3 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition-colors"
               onClick={() => window.dispatchEvent(new CustomEvent("open-customer-modal", { detail: { mode: "create" } }))}
@@ -179,9 +259,11 @@ export default function CustomersPage() {
           </div>
 
           {/* Empty State */}
-          {!isFetching && rows.length === 0 && (
+          {rows.length === 0 && (
             <div className="text-center py-8">
-              <div className="text-gray-500">لا توجد زبائن</div>
+              <div className="text-gray-500">
+                {searchQuery || selectedNationality ? "لا توجد نتائج تطابق البحث" : "لا توجد زبائن"}
+              </div>
             </div>
           )}
 
@@ -259,7 +341,7 @@ function CustomerModal() {
   const [form, setForm] = useState<Partial<Customers>>({});
   const [addCustomer, { isLoading: isSaving1 }] = useAddCustomerMutation();
   const [updateCustomer, { isLoading: isSaving2 }] = useUpdateCustomerMutation();
-  const { refetch } = useListCustomersQuery({ page: 1, limit: 20, search: "" });
+  const { refetch } = useListCustomersQuery({ page: 1, limit: 10, search: "" });
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
   const [isUploading, setIsUploading] = useState(false);
@@ -295,14 +377,14 @@ function CustomerModal() {
     const files = Array.from(e.target.files || []);
     const validFiles = files.filter(file => {
       const isValidType = file.type.startsWith('image/') || file.type === 'application/pdf';
-      const isValidSize = file.size <= 1 * 1024 * 1024; // 1MB limit
+      const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB limit
       
       if (!isValidType) {
         toast.error(`الملف ${file.name} غير مدعوم. يُسمح بالصور و PDF فقط`);
         return false;
       }
       if (!isValidSize) {
-        toast.error(`الملف ${file.name} كبير جداً. الحد الأقصى 1 ميجابايت`);
+        toast.error(`الملف ${file.name} كبير جداً. الحد الأقصى 10 ميجابايت`);
         return false;
       }
       return true;
@@ -339,13 +421,16 @@ function CustomerModal() {
         const result = await response.json();
         toast.success(`تم رفع ${selectedFiles.length} وثيقة بنجاح!`);
         setSelectedFiles([]);
+        // Force refresh of customers list to update PassportDocuments
+        await refetch();
+        // Also trigger global refresh event
+        window.dispatchEvent(new CustomEvent("refresh-customers-list"));
       } else {
         const error = await response.json();
         toast.error(error.error || "فشل في رفع الوثائق");
       }
     } catch (error) {
-      console.error('Upload error:', error);
-      toast.error("حدث خطأ أثناء رفع الوثائق");
+    
     } finally {
       setIsUploading(false);
     }
@@ -378,11 +463,13 @@ function CustomerModal() {
         await uploadPassportDocuments(customerId);
       }
 
-      refetch();
+      // Force refresh with a small delay to ensure backend has processed the documents
+      setTimeout(async () => {
+        await refetch();
+        window.dispatchEvent(new CustomEvent("refresh-customers-list"));
+      }, 500);
       onClose();
     } catch (error) {
-      toast.error("حدث خطأ أثناء حفظ البيانات");
-      console.error(error);
     }
   };
 
@@ -394,8 +481,8 @@ function CustomerModal() {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" onKeyDown={handleKeyDown}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 py-8 px-4">
+      <div className="bg-white rounded-lg p-6 max-w-4xl w-full mt-8 overflow-y-auto" onKeyDown={handleKeyDown}>
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">
             {openState.mode === "create" ? "إضافة زبون" : "تعديل زبون"}
@@ -517,7 +604,7 @@ function CustomerModal() {
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
             <p className="text-xs text-gray-500 mt-1">
-              يمكنك رفع عدة ملفات (صور أو PDF). الحد الأقصى لحجم الملف: 1 ميجابايت
+              يمكنك رفع عدة ملفات (صور أو PDF). الحد الأقصى لحجم الملف: 10 ميجابايت
             </p>
           </div>
 
@@ -626,8 +713,6 @@ function PassportDocumentsViewer() {
         toast.error("فشل في تحميل الوثائق");
       }
     } catch (error) {
-      console.error("Error fetching documents:", error);
-      toast.error("حدث خطأ أثناء تحميل الوثائق");
     } finally {
       setLoading(false);
     }
@@ -660,8 +745,7 @@ function PassportDocumentsViewer() {
         toast.error("فشل في تحميل الملف");
       }
     } catch (error) {
-      console.error("Download error:", error);
-      toast.error("حدث خطأ أثناء تحميل الملف");
+    
     }
   };
 
@@ -684,12 +768,13 @@ function PassportDocumentsViewer() {
       if (response.ok) {
         toast.success("تم حذف الوثيقة بنجاح");
         await fetchDocuments(viewerState.customerId!);
+        // Also refresh the main customers list
+        window.dispatchEvent(new CustomEvent("refresh-customers-list"));
       } else {
         toast.error("فشل في حذف الوثيقة");
       }
     } catch (error) {
-      console.error("Delete error:", error);
-      toast.error("حدث خطأ أثناء حذف الوثيقة");
+    
     }
   };
 

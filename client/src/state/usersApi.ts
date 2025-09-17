@@ -46,7 +46,7 @@ export interface CreateUserResponse {
 export const usersApi = createApi({
   reducerPath: "usersApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
+    baseUrl: "http://localhost:8000/api",
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).auth.token || 
                    (typeof window !== 'undefined' ? localStorage.getItem('token') : null);

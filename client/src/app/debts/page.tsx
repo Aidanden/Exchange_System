@@ -95,16 +95,18 @@ export default function DebtsPage() {
       
       toast.success(`تم تسجيل ${debtForm.DebtType === "TAKEN" ? "الاستذانة" : "الإقراض"} بنجاح`);
       
-      // Reset form
-      setDebtForm({
-        DebtType: "TAKEN",
-        DebtorName: "",
-        DebtorPhone: "",
-        DebtorAddress: "",
-        CarID: "",
-        Amount: "",
-        Description: "",
-      });
+      // Reset form with delay to ensure backend processing
+      setTimeout(() => {
+        setDebtForm({
+          DebtType: "TAKEN",
+          DebtorName: "",
+          DebtorPhone: "",
+          DebtorAddress: "",
+          CarID: "",
+          Amount: "",
+          Description: "",
+        });
+      }, 500);
     } catch (error: any) {
       // Extract meaningful error message
       let errorMessage = "حدث خطأ أثناء تسجيل العملية";

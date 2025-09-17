@@ -32,12 +32,12 @@ app.use(cors({
   credentials: true
 }));
 
-// Enable caching for GET requests only
+// Optimized caching for better performance
 app.use('/api', (req, res, next) => {
   if (req.method === 'GET') {
-    res.set('Cache-Control', 'public, max-age=30');
+    res.set('Cache-Control', 'public, max-age=5');
   } else {
-    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Cache-Control', 'no-cache');
   }
   next();
 });
