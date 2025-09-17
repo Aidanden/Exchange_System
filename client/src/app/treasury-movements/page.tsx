@@ -218,7 +218,7 @@ export default function TreasuryMovementsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       {parseFloat(movement.Cridit) > 0 ? (
-                        <span className="text-green-600">
+                        <span className="text-red-600">
                           {formatNumber(movement.Cridit)}
                         </span>
                       ) : (
@@ -227,7 +227,7 @@ export default function TreasuryMovementsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       {parseFloat(movement.Debit) > 0 ? (
-                        <span className="text-red-600">
+                        <span className="text-green-600">
                           {formatNumber(movement.Debit)}
                         </span>
                       ) : (

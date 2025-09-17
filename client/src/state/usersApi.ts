@@ -60,12 +60,12 @@ export const usersApi = createApi({
   tagTypes: ["Users"],
   endpoints: (builder) => ({
     getUsers: builder.query<UsersResponse, void>({
-      query: () => "/api/users",
+      query: () => "/users",
       providesTags: ["Users"],
     }),
     createUser: builder.mutation<CreateUserResponse, CreateUserRequest>({
       query: (userData) => ({
-        url: "/api/users",
+        url: "/users",
         method: "POST",
         body: userData,
       }),
@@ -73,7 +73,7 @@ export const usersApi = createApi({
     }),
     updateUser: builder.mutation<CreateUserResponse, { id: string; userData: Partial<CreateUserRequest> }>({
       query: ({ id, userData }) => ({
-        url: `/${id}`,
+        url: `/users/${id}`,
         method: "PUT",
         body: userData,
       }),
@@ -81,7 +81,7 @@ export const usersApi = createApi({
     }),
     deleteUser: builder.mutation<{ success: boolean; message: string }, string>({
       query: (id) => ({
-        url: `/${id}`,
+        url: `/users/${id}`,
         method: "DELETE",
       }),
       invalidatesTags: ["Users"],

@@ -21,7 +21,7 @@ export const dashboardApi = createApi({
   refetchOnReconnect: true,
   endpoints: (build) => ({
     getDashboardMetrics: build.query<DashboardMetrics, void>({
-      query: () => "/api/dashboard/dashboard",
+      query: () => "/dashboard/dashboard",
       providesTags: ["DashboardMetrics"],
       keepUnusedDataFor: 300,
     }),
