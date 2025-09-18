@@ -4,7 +4,7 @@ import { TrendingUp, DollarSign, ShoppingCart, Calendar, List } from 'lucide-rea
 import BuysModal from './BuysModal';
 import { formatNumber, formatPrice } from '@/utils/formatNumber';
 
-const cardBuys = () => {
+const CardBuys = () => {
   const { data, isLoading } = useGetDashboardMetricsQuery();
   const buyData = data?.lastBuy || [];
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -119,4 +119,4 @@ const cardBuys = () => {
   )
 }
 
-export default cardBuys
+export default CardBuys

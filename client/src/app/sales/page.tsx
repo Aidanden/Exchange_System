@@ -9,6 +9,7 @@ import { useGetNationalitiesQuery } from "@/state/nationalitsApi";
 import { Decimal } from "decimal.js";
 import { toast, Toaster } from "react-hot-toast";
 import { formatBalance, formatNumber } from "@/utils/formatNumber";
+import PermissionGuard from "@/components/PermissionGuard";
 
 interface SaleFormData {
   CarID: string;
@@ -297,9 +298,9 @@ export default function SalesPage() {
   };
 
   return (
-    <>
+    <PermissionGuard requiredPermission="sales:create">
       <Toaster position="top-right" />
-      <div className="p-6 max-w-6xl mx-auto">
+      <div className="p-6 bg-gray-50 min-h-screen font-tajawal">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">شاشة البيع</h1>
           <p className="text-gray-600">إدارة عمليات بيع العملات</p>
@@ -727,6 +728,6 @@ export default function SalesPage() {
           </div>
         )}
       </div>
-    </>
+    </PermissionGuard>
   );
 }

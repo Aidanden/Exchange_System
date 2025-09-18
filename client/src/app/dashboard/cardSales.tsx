@@ -3,7 +3,7 @@ import React from 'react';
 import { TrendingUp, DollarSign, ShoppingBag, Calendar } from 'lucide-react';
 import { formatPrice } from '@/utils/formatNumber';
 
-const cardSales = () => {
+const CardSales = () => {
   const { data, isLoading } = useGetDashboardMetricsQuery();
   const salesData = data?.lastSales || [];
 
@@ -66,7 +66,7 @@ const cardSales = () => {
                     <div>
                       <p className="font-medium text-gray-800 text-sm">فاتورة: {sale.BillNum}</p>
                       <p className="text-xs text-gray-500">
-                        {new Date(sale.BillDate).toLocaleDateString('en-US')}
+                        {new Date(sale.SaleDate).toLocaleDateString('en-US')}
                       </p>
                     </div>
                     <div className="text-left">
@@ -94,4 +94,4 @@ const cardSales = () => {
   );
 };
 
-export default cardSales;
+export default CardSales;

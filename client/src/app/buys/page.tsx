@@ -9,6 +9,7 @@ import { useGetNationalitiesQuery } from "@/state/nationalitsApi";
 import { Decimal } from "decimal.js";
 import { toast, Toaster } from "react-hot-toast";
 import { formatBalance } from "@/utils/formatNumber";
+import PermissionGuard from "@/components/PermissionGuard";
 
 // Helper functions for number formatting
 const formatNumberWithCommas = (value: string): string => {
@@ -300,7 +301,7 @@ export default function BuysPage() {
   };
 
   return (
-    <>
+    <PermissionGuard requiredPermission="buys:create">
       <Toaster position="top-right" />
       <div className="p-6 max-w-6xl mx-auto">
         <div className="mb-8">
@@ -722,6 +723,6 @@ export default function BuysPage() {
           </div>
         )}
       </div>
-    </>
+    </PermissionGuard>
   );
 }

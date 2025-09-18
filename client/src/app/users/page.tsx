@@ -7,16 +7,12 @@ import {
   Edit, 
   Trash2, 
   Shield, 
-  User, 
-  Mail, 
-  Phone, 
-  Calendar,
-  Filter,
-  MoreVertical,
-  Eye,
-  EyeOff
+  User,
+  Filter
 } from "lucide-react";
-import { useGetUsersQuery, useCreateUserMutation, useDeleteUserMutation } from "@/state/usersApi";
+import { useGetUsersQuery, useCreateUserMutation, useDeleteUserMutation, useUpdateUserMutation } from "@/state/usersApi";
+import PermissionGuard from "@/components/PermissionGuard";
+import { toast } from "react-hot-toast";
 
 // Types
 interface Permission {
@@ -46,9 +42,10 @@ interface User {
 }
 
 const UsersPage = () => {
-  const { data: usersData, isLoading, error, refetch } = useGetUsersQuery();
+  const { data: usersData, refetch } = useGetUsersQuery();
   const [createUser] = useCreateUserMutation();
   const [deleteUser] = useDeleteUserMutation();
+  const [updateUser] = useUpdateUserMutation();
   
   const [users, setUsers] = useState<User[]>([]);
   
@@ -103,7 +100,6 @@ const UsersPage = () => {
   const [selectedRole, setSelectedRole] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showPermissionsModal, setShowPermissionsModal] = useState(false);
 
   const [newUser, setNewUser] = useState({
@@ -112,6 +108,16 @@ const UsersPage = () => {
     email: "",
     phone: "",
     password: "",
+    role: "cashier",
+    isActive: true
+  });
+
+  const [editUser, setEditUser] = useState({
+    id: "",
+    username: "",
+    fullName: "",
+    email: "",
+    phone: "",
     role: "cashier",
     isActive: true
   });
@@ -152,7 +158,7 @@ const UsersPage = () => {
       }).unwrap();
       
       if (result.success) {
-        alert('تم إضافة المستخدم بنجاح');
+        toast.success('تم إضافة المستخدم بنجاح');
         setNewUser({
           username: "",
           fullName: "",
@@ -165,20 +171,49 @@ const UsersPage = () => {
         setShowAddModal(false);
         refetch(); // إعادة تحميل البيانات
       } else {
-        alert(result.message || 'خطأ في إضافة المستخدم');
+        toast.error(result.message || 'خطأ في إضافة المستخدم');
       }
-    } catch (error: any) {
-      alert(error?.data?.message || 'خطأ في إضافة المستخدم');
+    } catch (error) {
+      const errorMessage = (error as { data?: { message?: string } })?.data?.message || 'خطأ في إضافة المستخدم';
+      toast.error(errorMessage);
     }
   };
 
-  const handleEditUser = () => {
-    if (selectedUser) {
-      setUsers(users.map(user => 
-        user.id === selectedUser.id ? selectedUser : user
-      ));
-      setShowEditModal(false);
-      setSelectedUser(null);
+  const handleEditUser = async () => {
+    try {
+      // تحويل role إلى roleId
+      const getRoleId = (roleName: string) => {
+        const roleMap: { [key: string]: string } = {
+          'admin': 'role_admin_001',
+          'manager': 'role_manager_001', 
+          'cashier': 'role_cashier_001',
+          'accountant': 'role_accountant_001'
+        };
+        return roleMap[roleName] || 'role_cashier_001';
+      };
+      
+      const result = await updateUser({
+        id: editUser.id,
+        userData: {
+          username: editUser.username,
+          fullName: editUser.fullName,
+          email: editUser.email,
+          phone: editUser.phone,
+          roleId: getRoleId(editUser.role),
+          isActive: editUser.isActive
+        }
+      }).unwrap();
+      
+      if (result.success) {
+        toast.success('تم تحديث المستخدم بنجاح');
+        setShowEditModal(false);
+        refetch(); // إعادة تحميل البيانات
+      } else {
+        toast.error(result.message || 'خطأ في تحديث المستخدم');
+      }
+    } catch (error) {
+      const errorMessage = (error as { data?: { message?: string } })?.data?.message || 'خطأ في تحديث المستخدم';
+      toast.error(errorMessage);
     }
   };
 
@@ -187,13 +222,14 @@ const UsersPage = () => {
       try {
         const result = await deleteUser(userId).unwrap();
         if (result.success) {
-          alert('تم حذف المستخدم بنجاح');
+          toast.success('تم حذف المستخدم بنجاح');
           refetch(); // إعادة تحميل البيانات
         } else {
-          alert(result.message || 'خطأ في حذف المستخدم');
+          toast.error(result.message || 'خطأ في حذف المستخدم');
         }
-      } catch (error: any) {
-        alert(error?.data?.message || 'خطأ في حذف المستخدم');
+      } catch (error) {
+        const errorMessage = (error as { data?: { message?: string } })?.data?.message || 'خطأ في حذف المستخدم';
+        toast.error(errorMessage);
       }
     }
   };
@@ -205,7 +241,8 @@ const UsersPage = () => {
   };
 
   return (
-    <div className="p-6 font-tajawal">
+    <PermissionGuard requiredPermission="users:read">
+      <div className="p-6 font-tajawal">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">إدارة المستخدمين</h1>
@@ -323,7 +360,15 @@ const UsersPage = () => {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => {
-                            setSelectedUser(user);
+                            setEditUser({
+                              id: user.id,
+                              username: user.username,
+                              fullName: user.fullName,
+                              email: user.email,
+                              phone: user.phone,
+                              role: user.role,
+                              isActive: user.isActive
+                            });
                             setShowEditModal(true);
                           }}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
@@ -444,6 +489,106 @@ const UsersPage = () => {
         </div>
       )}
 
+      {/* Edit User Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center pt-20 z-[3] p-4">
+          <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">تعديل المستخدم</h2>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">اسم المستخدم</label>
+                  <input
+                    type="text"
+                    value={editUser.username}
+                    onChange={(e) => setEditUser({...editUser, username: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="أدخل اسم المستخدم"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">الاسم الكامل</label>
+                  <input
+                    type="text"
+                    value={editUser.fullName}
+                    onChange={(e) => setEditUser({...editUser, fullName: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="أدخل الاسم الكامل"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">البريد الإلكتروني</label>
+                  <input
+                    type="email"
+                    value={editUser.email}
+                    onChange={(e) => setEditUser({...editUser, email: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="أدخل البريد الإلكتروني"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">رقم الهاتف</label>
+                  <input
+                    type="tel"
+                    value={editUser.phone}
+                    onChange={(e) => setEditUser({...editUser, phone: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="أدخل رقم الهاتف"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">الدور</label>
+                  <select
+                    value={editUser.role}
+                    onChange={(e) => setEditUser({...editUser, role: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {roles.map(role => (
+                      <option key={role.id} value={role.id}>{role.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="editUserActive"
+                    checked={editUser.isActive}
+                    onChange={(e) => setEditUser({...editUser, isActive: e.target.checked})}
+                    className="mr-2"
+                  />
+                  <label htmlFor="editUserActive" className="text-sm font-semibold text-gray-700">
+                    المستخدم نشط
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={handleEditUser}
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white py-2 px-4 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200"
+                >
+                  حفظ التغييرات
+                </button>
+                <button
+                  onClick={() => {
+                    setShowEditModal(false);
+                  }}
+                  className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Permissions Modal */}
       {showPermissionsModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center pt-20 z-[3] p-4">
@@ -519,6 +664,7 @@ const UsersPage = () => {
         </div>
       )}
     </div>
+    </PermissionGuard>
   );
 };
 

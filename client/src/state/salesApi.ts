@@ -1,6 +1,23 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import type { Sales } from "./types";
-import { currenciesApi } from "./currenciesApi";
+
+interface Sales {
+  SaleID: string;
+  BillNum: string;
+  SaleDate: string;
+  CustID: string;
+  CarID: string;
+  Value: number;
+  SalePrice: number;
+  TotalPrice: number;
+  PaymentCurrencyID: string;
+  Customer?: {
+    Customer: string;
+  };
+  Carrence?: {
+    Carrency: string;
+    CarrencyCode: string;
+  };
+}
 
 type ListResponse = {
   data: Sales[];
@@ -18,13 +35,12 @@ export const salesApi = createApi({
       if (token) {
         headers.set('Authorization', `Bearer ${token}`);
       }
-      headers.set('Cache-Control', 'max-age=30');
       return headers;
     },
   }),
   reducerPath: "salesApi",
   tagTypes: ["Sales", "Currencies", "Currency"],
-  keepUnusedDataFor: 60,
+  keepUnusedDataFor: 0,
   endpoints: (build) => ({
     listSales: build.query<ListResponse, { page?: number; limit?: number; search?: string; custId?: string; exist?: boolean } | void>({
       query: (args) => {

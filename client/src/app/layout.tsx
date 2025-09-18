@@ -4,6 +4,7 @@ import "./globals.css";
 import DashboardWrapper from "./dashboardWrapper";
 import AuthProvider from "@/components/AuthProvider";
 import StoreProvider from "./redux";
+import { SessionTimeoutProvider } from "@/components/SessionTimeoutProvider";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -32,7 +33,9 @@ export default function RootLayout({
       >
         <StoreProvider>
           <AuthProvider>
-            <DashboardWrapper>{children}</DashboardWrapper>
+            <SessionTimeoutProvider>
+              <DashboardWrapper>{children}</DashboardWrapper>
+            </SessionTimeoutProvider>
           </AuthProvider>
         </StoreProvider>
       </body>

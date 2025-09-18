@@ -4,8 +4,6 @@ import React, { useState } from "react";
 import { useCreateDebtMutation } from "@/state/debtsApi";
 import { useGetCurrenciesQuery } from "@/state/currenciesApi";
 import { toast, Toaster } from "react-hot-toast";
-import { formatNumber } from "@/utils/formatNumber";
-import { Decimal } from "decimal.js";
 
 interface DebtFormData {
   DebtType: "TAKEN" | "GIVEN";

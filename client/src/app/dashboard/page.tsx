@@ -9,7 +9,7 @@ import { formatPrice } from "@/utils/formatNumber";
 
 const Dashboard = () => {
   const { data, isLoading } = useGetDashboardMetricsQuery();
-  const statistics = data?.statistics;
+  const statistics = data;
 
   return (
     <div className="p-6">

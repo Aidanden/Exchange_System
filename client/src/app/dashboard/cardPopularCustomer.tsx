@@ -2,7 +2,7 @@ import { useGetDashboardMetricsQuery } from "@/state/dashboardApi";
 import { Users, UserPlus, Phone, Calendar, TrendingUp, FileText } from "lucide-react";
 import React from "react";
 
-const cardPopularCustomer = () => {
+const CardPopularCustomer = () => {
   const { data: dashboardMetrics, isLoading } = useGetDashboardMetricsQuery();
   const allCustomers = dashboardMetrics?.popularCustomer || [];
   
@@ -129,4 +129,4 @@ const cardPopularCustomer = () => {
   );
 };
 
-export default cardPopularCustomer;
+export default CardPopularCustomer;

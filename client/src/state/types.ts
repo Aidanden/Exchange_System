@@ -82,6 +82,10 @@ export interface Customers {
     lastBuy: Buys[];
     lastSales: Sales[];
     Expanss: ExpanseAccounts[];
+    totalCustomers: number;
+    totalBuys: number;
+    totalSales: number;
+    monthlySalesTotal: Decimal;
   }
   
 

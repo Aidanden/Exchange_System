@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useListTreasuryMovementsQuery, useGetTreasurySummaryQuery } from "@/state/treasuryApi";
 import { useGetCurrenciesQuery } from "@/state/currenciesApi";
-import { toast, Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
 import { formatNumber } from "@/utils/formatNumber";
 
 export default function TreasuryMovementsPage() {
