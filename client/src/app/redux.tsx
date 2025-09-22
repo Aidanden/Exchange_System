@@ -20,6 +20,7 @@ import { debtsApi } from "@/state/debtsApi"; // إضافة debtsApi
 import { treasuryApi } from "@/state/treasuryApi"; // إضافة treasuryApi
 import { authApi } from "@/state/authApi"; // إضافة authApi
 import { usersApi } from "@/state/usersApi"; // إضافة usersApi
+import { permissionsApi } from "@/state/permissionsApi"; // إضافة permissionsApi
 import { setupListeners } from "@reduxjs/toolkit/query";
 import {
   persistStore,
@@ -79,6 +80,7 @@ const rootReducer = combineReducers({
   [treasuryApi.reducerPath]: treasuryApi.reducer, // إضافة treasuryApi.reducer
   [authApi.reducerPath]: authApi.reducer, // إضافة authApi.reducer
   [usersApi.reducerPath]: usersApi.reducer, // إضافة usersApi.reducer
+  [permissionsApi.reducerPath]: permissionsApi.reducer, // إضافة permissionsApi.reducer
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -92,7 +94,7 @@ export const makeStore = () => {
         serializableCheck: {
           ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
         },
-      }).concat(dashboardApi.middleware, nationalitsApi.middleware, currenciesApi.middleware, customersApi.middleware, buysApi.middleware, salesApi.middleware, debtsApi.middleware, treasuryApi.middleware, authApi.middleware, usersApi.middleware), // إضافة middleware الخاص بـ APIs
+      }).concat(dashboardApi.middleware, nationalitsApi.middleware, currenciesApi.middleware, customersApi.middleware, buysApi.middleware, salesApi.middleware, debtsApi.middleware, treasuryApi.middleware, authApi.middleware, usersApi.middleware, permissionsApi.middleware), // إضافة middleware الخاص بـ APIs
   });
 };
 

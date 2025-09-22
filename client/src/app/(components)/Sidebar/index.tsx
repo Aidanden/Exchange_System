@@ -16,10 +16,12 @@ import {
   CreditCard,
   FileText,
   Wallet,
+  Shield,
 } from "lucide-react"; // تأكد من استيراد الأيقونات المطلوبة
 import { usePathname } from "next/navigation";
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 interface SidebarLinkProps {
   href: string;
@@ -92,9 +94,13 @@ const Sidebar = () => {
           isSidebarCollapsed ? "px-4" : "px-6"
         }`}
       >
-        <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-          <span className="text-white font-bold text-lg">E</span>
-        </div>
+        <Image
+          src="/company-logo.svg"
+          alt="Al Monjez Logo"
+          width={isSidebarCollapsed ? 32 : 40}
+          height={isSidebarCollapsed ? 32 : 40}
+          className="object-contain"
+        />
         <h1
           className={`${
             isSidebarCollapsed ? "hidden" : "block"
@@ -185,6 +191,12 @@ const Sidebar = () => {
           isCollapsed={isSidebarCollapsed}
         />
         <SidebarLink
+          href="/permissions"
+          icon={Shield}
+          label="إدارة الصلاحيات"
+          isCollapsed={isSidebarCollapsed}
+        />
+        <SidebarLink
           href="/reports"
           icon={RepeatIcon}
           label="التقارير"
@@ -194,7 +206,7 @@ const Sidebar = () => {
       {/* FOOTER */}
       <div className={`${isSidebarCollapsed ? "hidden" : "block"} mb-6 px-6 pt-4 border-t border-gray-200`}>
         <p className="text-center text-xs text-gray-400 font-medium">
-          &copy; 2024 Aidanden Company
+          &copy; 2024 AL MONJEZ Telecommunications & Technology
         </p>
       </div>
     </div>

@@ -6,6 +6,7 @@ import CardSales from "./cardSales";
 import { BarChart3, Users, ShoppingCart, DollarSign, TrendingUp } from "lucide-react";
 import { useGetDashboardMetricsQuery } from "@/state/dashboardApi";
 import { formatPrice } from "@/utils/formatNumber";
+import Image from "next/image";
 
 const Dashboard = () => {
   const { data, isLoading } = useGetDashboardMetricsQuery();
@@ -15,11 +16,26 @@ const Dashboard = () => {
     <div className="p-6">
       {/* PAGE HEADER */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 flex items-center">
-          <BarChart3 className="w-8 h-8 ml-3 text-blue-600" />
-          لوحة التحكم الرئيسية
-        </h1>
-        <p className="text-gray-600 mt-2">مرحباً بك في نظام إدارة الصرافة</p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <BarChart3 className="w-8 h-8 ml-3 text-blue-600" />
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800">
+                لوحة التحكم الرئيسية
+              </h1>
+              <p className="text-gray-600 mt-2">مرحباً بك في نظام إدارة الصرافة</p>
+            </div>
+          </div>
+          <div className="flex items-center">
+            <Image
+              src="/company-logo.svg"
+              alt="Al Monjez Logo"
+              width={80}
+              height={80}
+              className="object-contain"
+            />
+          </div>
+        </div>
       </div>
 
       {/* OVERVIEW STATISTICS */}

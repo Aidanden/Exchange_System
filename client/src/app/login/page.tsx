@@ -86,10 +86,10 @@ const LoginPage = () => {
         <div className="text-center mb-8">
           <div className="flex justify-center mb-6">
             <Image
-              src="/logo.svg"
-              alt="Al-Manjer Logo"
-              width={120}
-              height={120}
+              src="/company-logo.svg"
+              alt="Al Monjez Logo"
+              width={140}
+              height={140}
               className="object-contain"
               priority
             />
@@ -196,7 +196,7 @@ const LoginPage = () => {
         {/* Footer */}
         <div className="text-center mt-8">
           <p className="text-xs text-gray-500">
-            &copy; 2024 Aidanden Company. جميع الحقوق محفوظة
+            &copy; 2024 AL MONJEZ Telecommunications & Technology . جميع الحقوق محفوظة
           </p>
         </div>
       </div>

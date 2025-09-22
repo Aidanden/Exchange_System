@@ -7,6 +7,7 @@ import { logout } from "@/state/authSlice";
 import { useLogoutMutation } from "@/state/authApi";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 
 const Navbar = () => {
@@ -52,7 +53,14 @@ const Navbar = () => {
           <Menu className="w-4 h-4 text-blue-600 group-hover:text-blue-700 transition-colors duration-300" />
         </button>
       
-        <div className="relative">
+        <div className="flex items-center gap-3">
+          <Image
+            src="/company-logo.svg"
+            alt="Al Monjez Logo"
+            width={40}
+            height={40}
+            className="object-contain"
+          />
           <div className="text-lg font-semibold text-gray-700">
             مرحباً بك في نظام الصرافة
           </div>
