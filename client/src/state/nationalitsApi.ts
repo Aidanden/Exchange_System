@@ -3,7 +3,7 @@ import { Category, Nationality } from "./types";
 
 export const nationalitsApi = createApi({
   baseQuery: fetchBaseQuery({ 
-    baseUrl: "http://localhost:5000/api",
+    baseUrl: "http://102.213.183.227:5000/api",
     prepareHeaders: (headers) => {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       if (token) {
