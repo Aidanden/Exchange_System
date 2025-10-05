@@ -191,7 +191,7 @@ export default function SalesPage() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8000/api/customers/${customerId}/passport-documents`, {
+      const response = await fetch(`http://localhost:5000/api/customers/${customerId}/passport-documents`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

@@ -71,7 +71,7 @@ export interface DebtsListResponse {
 export const debtsApi = createApi({
   reducerPath: "debtsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:8000/api",
+    baseUrl: "http://localhost:5000/api",
     prepareHeaders: (headers) => {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       if (token) {
