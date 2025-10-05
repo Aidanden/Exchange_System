@@ -191,7 +191,7 @@ export default function SalesPage() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://102.213.183.227:5000/api'}/customers/${customerId}/passport-documents`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/customers/${customerId}/passport-documents`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

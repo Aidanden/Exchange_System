@@ -3,8 +3,7 @@
     "CustID": "47ab518f-ec0e-4793-8d3b-53780452e400",
     "Customer": "مصرف ليبيا المركزي",
     "NatID": "760beed5-a14b-4e4b-9951-3ebe6f5842a1",
-    "IdentifiID": "1344c490-9f30-4a09-8379-e26dc551599e",
-    "IdNumber": "000000",
+    "passportNumber": "000000",
     "ExpDate": "2099-12-31",
     "ReleasePlace": "طرابلس",
     "NationalNumber": "000000000000",
@@ -12,14 +11,14 @@
     "Phone": "000000000",
     "UserID": "3b0fd66b-a4d6-4d95-94e4-01940c99aedb",
     "Exist": true,
-    "OperDate": "2024-12-05T00:00:00.000Z"
+    "OperDate": "2024-12-05T00:00:00.000Z",
+    "CustomerType": false
   },
   {
     "CustID": "aa076cf0-2af4-42d1-a65a-e21048900cdc",
     "Customer": "إمحمد علي بن سعيد",
     "NatID": "760beed5-a14b-4e4b-9951-3ebe6f5842a1",
-    "IdentifiID": "f9e8bb8b-b267-49d9-b621-7f912b348e81",
-    "IdNumber": "P9NY087",
+    "passportNumber": "P9NY087",
     "ExpDate": "2025-05-05",
     "ReleasePlace": "سوق الجمعة",
     "NationalNumber": "119940362250",
@@ -27,14 +26,14 @@
     "Phone": "0918636083",
     "UserID": "3b0fd66b-a4d6-4d95-94e4-01940c99aedb",
     "Exist": true,
-    "OperDate": "2024-12-05T00:00:00.000Z"
+    "OperDate": "2024-12-05T00:00:00.000Z",
+    "CustomerType": true
   },
   {
     "CustID": "47ab518f-ec0e-4793-8d3b-53780452e472",
     "Customer": "عصام سلامة",
     "NatID": "760beed5-a14b-4e4b-9951-3ebe6f5842a1",
-    "IdentifiID": "1344c490-9f30-4a09-8379-e26dc551599e",
-    "IdNumber": "253614",
+    "passportNumber": "253614",
     "ExpDate": "2025-10-10",
     "ReleasePlace": "طرابلس",
     "NationalNumber": "119900363313",
@@ -42,6 +41,7 @@
     "Phone": "0925847693",
     "UserID": "3b0fd66b-a4d6-4d95-94e4-01940c99aedb",
     "Exist": true,
-    "OperDate": "2024-12-05T00:00:00.000Z"
+    "OperDate": "2024-12-05T00:00:00.000Z",
+    "CustomerType": true
   }
 ]

@@ -12,7 +12,7 @@ type ListResponse = {
 export const customersApi = createApi({
   reducerPath: "customersApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://102.213.183.227:5000/api",
+    baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api",
     prepareHeaders: (headers) => {
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       if (token) {

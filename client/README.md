@@ -1,5 +1,15 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Environment Setup
+
+Before running the project, create a `.env.local` file in the root directory with the following content:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5000/api
+```
+
+**Note:** Change the port number if your backend server runs on a different port (e.g., 8000).
+
 ## Getting Started
 
 First, run the development server:
@@ -14,7 +24,7 @@ pnpm dev
 bun dev
 ```
 
-Open [http://102.213.183.227:3000](http://102.213.183.227:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

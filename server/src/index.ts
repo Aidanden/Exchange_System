@@ -28,7 +28,7 @@ app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
 app.use(morgan("common"));
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || "http://102.213.183.227:3050",
+  origin: process.env.CORS_ORIGIN || "http://localhost:3050",
   credentials: true
 }));
 
